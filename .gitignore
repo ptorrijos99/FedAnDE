@@ -1,0 +1,92 @@
+# Compiled class file
+*.class
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+.idea
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+nbactions.xml
+
+### VS Code ###
+.vscode/
+.devcontainer
+
+### System ###
+.DS_Store
+.idea/vcs.xml
+desktop.ini
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Carpeta de salidas
+outputs/
+runs/
+logs/
+checkpoints/
+tmp/
+*.tmp
+
+# Ignore root-level experiments folder
+/experiments/
+
+# But don't ignore experiments folders elsewhere
+!**/experiments/
+
+# Archivos ocultos o temporales
+*.swp
+*~
+
+### Results folder ###
+results*/
+
+### Notebooks folder
+notebooks/
+
+### Baseline algorithms
+baselines/
+
+### Specific experiment scripts folder
+scripts*/
+
+res/classification/AnDE/Census-Income_(KDD).arff
+src/main/java/consensusBN/Experiments/prueba.java
+/scripts-slurm
+res/classification/metadata nIters.csv
+/res/classification/Big
+res/regression/Year_Prediction_MSD.arff
+
+pru*.java
+
+
