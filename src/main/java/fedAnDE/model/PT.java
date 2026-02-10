@@ -84,10 +84,12 @@ public class PT implements NumericDenoisableModel {
     /**
      * Constructor
      *
-     * @param ensemble The list of classifiers (can be only one, for example for Naive Bayes).
+     * @param ensemble     The list of classifiers (can be only one, for example for
+     *                     Naive Bayes).
      * @param combinations The list of generated classes used for AnDE with n>0.
      */
-    public PT(List<AbstractClassifier> ensemble, List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps) {
+    public PT(List<AbstractClassifier> ensemble, List<int[]> combinations,
+            List<Map<String, Integer>> syntheticClassMaps) {
         this.ensemble = ensemble;
         this.combinations = combinations;
         this.syntheticClassMaps = syntheticClassMaps;
@@ -96,22 +98,29 @@ public class PT implements NumericDenoisableModel {
     /**
      * Constructor with numInstances
      */
-    public PT(List<AbstractClassifier> ensemble, List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps, int numInstances) {
+    public PT(List<AbstractClassifier> ensemble, List<int[]> combinations,
+            List<Map<String, Integer>> syntheticClassMaps, int numInstances) {
         this(ensemble, combinations, syntheticClassMaps);
         this.numInstances = numInstances;
     }
 
     /**
-     * Applies differential privacy noise to the internal probabilistic model by perturbing discrete counts.
+     * Applies differential privacy noise to the internal probabilistic model by
+     * perturbing discrete counts.
      * <p>
-     * This method iterates over all {@link FilteredClassifier} instances in the ensemble. If the underlying
-     * base classifier is a {@link NaiveBayes}, it accesses both the class distribution and the conditional
-     * distributions for each attribute given the class. For each discrete estimator, it extracts raw counts,
-     * applies Laplace noise scaled to the desired privacy budget, clips negative values, applies smoothing,
+     * This method iterates over all {@link FilteredClassifier} instances in the
+     * ensemble. If the underlying
+     * base classifier is a {@link NaiveBayes}, it accesses both the class
+     * distribution and the conditional
+     * distributions for each attribute given the class. For each discrete
+     * estimator, it extracts raw counts,
+     * applies Laplace noise scaled to the desired privacy budget, clips negative
+     * values, applies smoothing,
      * normalizes the resulting vector, and updates the estimator accordingly.
      * </p>
      * <p>
-     * This approach ensures that the shared parameters satisfy ε-differential privacy while preserving the
+     * This approach ensures that the shared parameters satisfy ε-differential
+     * privacy while preserving the
      * structure expected by Weka classifiers.
      * </p>
      *
@@ -131,7 +140,8 @@ public class PT implements NumericDenoisableModel {
                     DiscreteEstimator classDist = (DiscreteEstimator) nb.getClassEstimator();
                     applyNoiseToEstimator(numericNoise, classDist);
 
-                    // Privatize conditional estimators (conditional probabilities for each attribute given class)
+                    // Privatize conditional estimators (conditional probabilities for each
+                    // attribute given class)
                     Estimator[][] conds = nb.getConditionalEstimators();
                     for (Estimator[] cond : conds) {
                         for (Estimator est : cond) {
@@ -146,15 +156,21 @@ public class PT implements NumericDenoisableModel {
     }
 
     /**
-     * Applies differential privacy noise to a {@link DiscreteEstimator} by perturbing raw counts.
+     * Applies differential privacy noise to a {@link DiscreteEstimator} by
+     * perturbing raw counts.
      * <p>
-     * This method retrieves the original symbol counts from the estimator, adds Laplace noise scaled to
-     * the specified privacy budget, clips negative values, applies Laplace smoothing, and normalizes the result
-     * to obtain a valid probability distribution. The estimator is then updated to reflect the privatized distribution.
+     * This method retrieves the original symbol counts from the estimator, adds
+     * Laplace noise scaled to
+     * the specified privacy budget, clips negative values, applies Laplace
+     * smoothing, and normalizes the result
+     * to obtain a valid probability distribution. The estimator is then updated to
+     * reflect the privatized distribution.
      * </p>
      *
-     * @param noise          the {@link NumericNoiseGenerator} that adds Laplace noise to the counts
-     * @param estimator      the {@link DiscreteEstimator} containing the counts to privatize
+     * @param noise     the {@link NumericNoiseGenerator} that adds Laplace noise to
+     *                  the counts
+     * @param estimator the {@link DiscreteEstimator} containing the counts to
+     *                  privatize
      */
     void applyNoiseToEstimator(NumericNoiseGenerator noise, DiscreteEstimator estimator) {
         int k = estimator.getNumSymbols();
@@ -164,39 +180,40 @@ public class PT implements NumericDenoisableModel {
         double oldSum = 0.0;
         for (int i = 0; i < k; i++) {
             counts[i] = estimator.getCount(i);
-            oldSum   += counts[i];
+            oldSum += counts[i];
         }
 
         /* 2. Laplace noise */
         double[] noisy = noise.privatize(counts);
 
         /* 3. clip + smoothing */
-        double alpha = 1e-3;
+        double alpha = 1;
         for (int i = 0; i < k; i++) {
             noisy[i] = Math.max(0.0, noisy[i]) + alpha;
         }
 
         /* 4. rescale to keep the same total mass */
         double newSum = 0.0;
-        for (double v : noisy) newSum += v;
-        double scale = oldSum / newSum;          // preserves magnitude expected by Weka
-        for (int i = 0; i < k; i++) noisy[i] *= scale;
+        for (double v : noisy)
+            newSum += v;
+        double scale = oldSum / newSum; // preserves magnitude expected by Weka
+        for (int i = 0; i < k; i++)
+            noisy[i] *= scale;
 
         /* 5. overwrite internal arrays via reflection */
         try {
             java.lang.reflect.Field fCounts = DiscreteEstimator.class.getDeclaredField("m_Counts");
-            java.lang.reflect.Field fSum    = DiscreteEstimator.class.getDeclaredField("m_SumOfCounts");
+            java.lang.reflect.Field fSum = DiscreteEstimator.class.getDeclaredField("m_SumOfCounts");
             fCounts.setAccessible(true);
             fSum.setAccessible(true);
 
             double[] mCounts = (double[]) fCounts.get(estimator);
             System.arraycopy(noisy, 0, mCounts, 0, k);
-            fSum.setDouble(estimator, oldSum);        // = sum(noisy) after rescale
+            fSum.setDouble(estimator, oldSum); // = sum(noisy) after rescale
         } catch (Exception e) {
             throw new RuntimeException("Unable to set privatized counts", e);
         }
     }
-
 
     /**
      * Gets the model.
@@ -230,15 +247,16 @@ public class PT implements NumericDenoisableModel {
      * Saves the statistics of the model.
      * 
      * @param operation The operation.
-     * @param epoch The epoch.
-     * @param path The path.
-     * @param nClients The number of clients.
-     * @param id The identifier.
-     * @param data The data.
+     * @param epoch     The epoch.
+     * @param path      The path.
+     * @param nClients  The number of clients.
+     * @param id        The identifier.
+     * @param data      The data.
      * @param iteration The iteration.
-     * @param time The time.
+     * @param time      The time.
      */
-    public void saveStats(String operation, String epoch, String path, int nClients, int id, Data data, int iteration, double time) {
+    public void saveStats(String operation, String epoch, String path, int nClients, int id, Data data, int iteration,
+            double time) {
         Weka_Instances weka = (Weka_Instances) data;
         Instances train = weka.getTrain();
         Instances test = weka.getTest();
@@ -265,7 +283,8 @@ public class PT implements NumericDenoisableModel {
     }
 
     /**
-     * Get the score of the model. This method is unused and throws an exception if called.
+     * Get the score of the model. This method is unused and throws an exception if
+     * called.
      * 
      * @return The score of the model.
      */
@@ -274,7 +293,8 @@ public class PT implements NumericDenoisableModel {
     }
 
     /**
-     * Computes the score of the model. This method is unused and throws an exception if called.
+     * Computes the score of the model. This method is unused and throws an
+     * exception if called.
      * 
      * @param data The data.
      * @return The score of the model.
