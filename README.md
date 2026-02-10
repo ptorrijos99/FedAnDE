@@ -49,7 +49,7 @@ The main entry point is `fedAnDE.experiments.ExperimentRunner`. You can run it d
 **Command-line Usage:**
 
 ```bash
-java -cp target/bayesfl-1.0-SNAPSHOT-jar-with-dependencies.jar fedAnDE.experiments.ExperimentRunner \
+java -cp target/fedAnDE-1.0-jar-with-dependencies.jar fedAnDE.experiments.ExperimentRunner \
     <lineIndex> <paramsFile> <nodeName>
 ```
 
@@ -64,5 +64,5 @@ The parameters file should contain space-separated values for:
 **Example:**
 To run a default experiment (if no args provided):
 ```bash
-java -cp target/bayesfl-1.0-SNAPSHOT-jar-with-dependencies.jar fedAnDE.experiments.ExperimentRunner
+java -cp target/fedAnDE-1.0-jar-with-dependencies.jar fedAnDE.experiments.ExperimentRunner
 ```

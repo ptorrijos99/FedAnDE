@@ -5,10 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org</groupId>
-    <artifactId>bayesfl</artifactId>
+    <artifactId>fedAnDE</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
-    <name>BayesFL</name>
+    <name>FedAnDE</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
