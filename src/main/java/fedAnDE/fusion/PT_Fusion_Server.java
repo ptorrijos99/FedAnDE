@@ -48,11 +48,15 @@ import weka.estimators.DiscreteEstimator;
 import fedAnDE.model.Model;
 import fedAnDE.model.PT;
 
+/**
+ * A dummy NaiveBayes class to set distributions directly.
+ */
 class DummyNB extends NaiveBayes {
     public void setDistributions(DiscreteEstimator[][] m_Distributions) {
         this.m_Distributions = m_Distributions;
 
-        // Initialize this.m_Instances because it is used in the method distributionForInstance() to obtain weights
+        // Initialize this.m_Instances because it is used in the method
+        // distributionForInstance() to obtain weights
         ArrayList<Attribute> attInfo = new ArrayList<>();
         for (int i = 0; i < m_Distributions.length; i++) {
             attInfo.add(new Attribute("att" + i));
@@ -63,7 +67,8 @@ class DummyNB extends NaiveBayes {
     public void setClassDistribution(DiscreteEstimator m_ClassDistribution) {
         this.m_ClassDistribution = m_ClassDistribution;
 
-        // Initialize this.m_NumClasses because it is used in the method distributionForInstance()
+        // Initialize this.m_NumClasses because it is used in the method
+        // distributionForInstance()
         this.m_NumClasses = m_ClassDistribution.getNumSymbols();
     }
 }
@@ -75,20 +80,20 @@ public class PT_Fusion_Server implements Fusion {
 
     /**
      * Perform the fusion of two models.
-     * 
+     *
      * @param model1 The first model to fuse.
      * @param model2 The second model to fuse.
      * @return The global model fused.
      */
     public Model fusion(Model model1, Model model2) {
-        Model[] models = {model1, model2};
+        Model[] models = { model1, model2 };
 
         return fusion(models);
     }
 
     /**
      * Fusion several models.
-     * 
+     *
      * @param models The array of models to fuse.
      * @return The global model fused.
      */
@@ -119,42 +124,63 @@ public class PT_Fusion_Server implements Fusion {
             // Initialize fusion structures
             DiscreteEstimator fusedClassDist = new DiscreteEstimator(numClasses, true);
             List<DiscreteEstimator[]> fusedDistributions = new ArrayList<>();
-            int numAtts = -1;
 
+            // First pass to initialize structure based on the first model
+            // Note: We assume all models have the same attribute structure
+            PT firstPt = (PT) models[0];
+            FilteredClassifier firstFiltered = (FilteredClassifier) firstPt.ensemble.get(i);
+            NaiveBayes firstNB = (NaiveBayes) firstFiltered.getClassifier();
+            int numAtts = firstNB.getConditionalEstimators().length;
+
+            for (int att = 0; att < numAtts; att++) {
+                DiscreteEstimator[] row = new DiscreteEstimator[numClasses];
+                for (int c = 0; c < numClasses; c++) {
+                    // Initialize with the number of symbols from the first model
+                    // (Assumes all clients share the same schema/dictionary)
+                    DiscreteEstimator localEst = (DiscreteEstimator) firstNB.getConditionalEstimators()[att][0];
+                    row[c] = new DiscreteEstimator(localEst.getNumSymbols(), true);
+                }
+                fusedDistributions.add(row);
+            }
+
+            // Aggregation Loop
             for (Model m : models) {
                 PT pt = (PT) m;
                 FilteredClassifier filtered = (FilteredClassifier) pt.ensemble.get(i);
                 NaiveBayes localNB = (NaiveBayes) filtered.getClassifier();
                 Map<String, Integer> localMap = pt.syntheticClassMaps.get(i);
 
-                // First time only: allocate distributions
-                if (fusedDistributions.isEmpty()) {
-                    numAtts = localNB.getConditionalEstimators().length;
-                    for (int att = 0; att < numAtts; att++) {
-                        DiscreteEstimator[] row = new DiscreteEstimator[numClasses];
-                        for (int c = 0; c < numClasses; c++) {
-                            DiscreteEstimator localEst = (DiscreteEstimator) localNB.getConditionalEstimators()[att][0];
-                            row[c] = new DiscreteEstimator(localEst.getNumSymbols(), true);
-                        }
-                        fusedDistributions.add(row);
-                    }
-                }
+                // --- Weighted Aggregation Logic ---
 
-                // Aggregate class distribution
                 for (Map.Entry<String, Integer> entry : localMap.entrySet()) {
                     String label = entry.getKey();
                     int localIdx = entry.getValue();
                     int globalIdx = classMap.get(label);
 
-                    double weight = localNB.getClassEstimator().getProbability(localIdx);
-                    fusedClassDist.addValue(globalIdx, weight);
+                    // 1. Get Raw Class Count (NOT smoothed probability)
+                    // Use getCount() instead of getProbability() to avoid Laplace smoothing
+                    // contamination during aggregation
+                    // We also subtract 1.0 because Weka initializes counts with 1 (Laplace)
+                    double localClassCount = ((DiscreteEstimator) localNB.getClassEstimator()).getCount(localIdx) - 1.0;
 
-                    // Aggregate per-attribute conditional estimators
+                    // Add to Global Class Estimator
+                    fusedClassDist.addValue(globalIdx, localClassCount);
+
+                    // 2. Get Raw Conditional Counts
                     for (int att = 0; att < numAtts; att++) {
-                        DiscreteEstimator localEstimator = (DiscreteEstimator) localNB.getConditionalEstimators()[att][localIdx];
-                        try {
-                            fusedDistributions.get(att)[globalIdx].aggregate(localEstimator);
-                        } catch (Exception ignored) {}
+                        DiscreteEstimator localEst = (DiscreteEstimator) localNB
+                                .getConditionalEstimators()[att][localIdx];
+                        DiscreteEstimator globalEst = fusedDistributions.get(att)[globalIdx];
+
+                        // Iterate over all values of the attribute to get raw counts
+                        int nSymbols = localEst.getNumSymbols();
+                        for (int valIdx = 0; valIdx < nSymbols; valIdx++) {
+                            // We subtract 1.0 because Weka initializes counts with 1 (Laplace)
+                            double rawCount = localEst.getCount(valIdx) - 1.0;
+
+                            // Accumulate raw counts into global estimator
+                            globalEst.addValue(valIdx, rawCount);
+                        }
                     }
                 }
             }

@@ -49,8 +49,9 @@ import optimize.Minimizer;
  */
 import fedAnDE.data.Data;
 import fedAnDE.data.Weka_Instances;
-import fedAnDE.privacy.DenoisableModel;
 import fedAnDE.privacy.NoiseGenerator;
+import fedAnDE.privacy.NumericDenoisableModel;
+import fedAnDE.privacy.NumericNoiseGenerator;
 
 
 import static fedAnDE.experiments.utils.ExperimentUtils.*;
@@ -60,7 +61,7 @@ import static fedAnDE.experiments.utils.ExperimentUtils.*;
  * This model stores a list of parameter trees and classifiers,
  * one for each combination used in the AnDE structure (n=0 is Naive Bayes).
  */
-public class WDPT implements DenoisableModel {
+public class WDPT implements NumericDenoisableModel {
 
     /**
      * The list of tree-based parameter storages (one per combination).
@@ -93,9 +94,14 @@ public class WDPT implements DenoisableModel {
     private final List<ObjectiveFunction> functions;
 
     /**
+     * Number of instances used to train this model.
+     */
+    private int numInstances = 0;
+
+    /**
      * The header for the file.
      */
-    private final String header = "bbdd,id,cv,algorithm,bins,seed,nClients,fusParams,fusProbs,dptype,epsilon,delta,rho,sensitivity,autoSens,epoch,iteration,instances,maxIterations,trAcc,trPr,trRc,trF1,trTime,teAcc,tePr,teRc,teF1,teTime,time\n";
+    private String header = "bbdd,id,cv,algorithm,node,bins,seed,nClients,fusParams,fusProbs,dptype,epsilon,delta,rho,sensitivity,autoSens,alpha,epoch,iteration,instances,maxIterations,trAcc,trPr,trRc,trF1,trLogLoss,trBrier,trTime,teAcc,tePr,teRc,teF1,teLogLoss,teBrier,teTime,time\n";
 
     /**
      * Constructor.
@@ -118,7 +124,17 @@ public class WDPT implements DenoisableModel {
     }
 
     /**
-     * Applies noise to the internal probabilistic parameters of the model using a {@link NoiseGenerator}.
+     * Constructor with numInstances.
+     */
+    public WDPT(List<wdBayesParametersTree> trees, List<AbstractClassifier> classifiers, List<Minimizer> minimizers,
+                List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps, List<ObjectiveFunction> functions,
+                int numInstances) {
+        this(trees, classifiers, minimizers, combinations, syntheticClassMaps, functions);
+        this.numInstances = numInstances;
+    }
+
+    /**
+     * Applies noise to the internal probabilistic parameters of the model using a {@link NumericNoiseGenerator}.
      * <p>
      * This method perturbs the class prior probabilities and conditional distributions in each
      * {@link wdBayesParametersTree}. Since the model stores these values in probability space
@@ -134,17 +150,21 @@ public class WDPT implements DenoisableModel {
      */
     @Override
     public void applyNoise(NoiseGenerator noise) {
+        if (!(noise instanceof NumericNoiseGenerator numericNoise)) {
+            throw new IllegalArgumentException("Noise generator must be a NumericNoiseGenerator");
+        }
+
         for (wdBayesParametersTree tree : trees) {
             // Privatize classCounts[] (linear scale)
             double[] original = tree.getClassCounts();
-            double[] noisy = noise.privatize(original);
+            double[] noisy = numericNoise.privatize(original);
             double[] renorm = normalize(noisy);
             System.arraycopy(renorm, 0, tree.classCounts, 0, renorm.length);
 
             // Privatize xyCount[] in log-space
             if (tree.wdBayesNode_ != null) {
                 for (int i = 0; i < tree.wdBayesNode_.length; i++) {
-                    applyNoiseToNode(tree.wdBayesNode_[i], noise);
+                    applyNoiseToNode(tree.wdBayesNode_[i], numericNoise);
                 }
             }
         }
@@ -156,7 +176,7 @@ public class WDPT implements DenoisableModel {
      * The {@code xyCount[]} array contains log-probabilities of P(x | parents). This method:
      * <ul>
      *     <li>Exponentiates the values to retrieve probabilities</li>
-     *     <li>Adds noise using the given {@link NoiseGenerator}</li>
+     *     <li>Adds noise using the given {@link NumericNoiseGenerator}</li>
      *     <li>Renormalizes the result to form a valid probability distribution</li>
      *     <li>Converts the values back to log-space and overwrites {@code xyCount[]}</li>
      * </ul>
@@ -169,7 +189,7 @@ public class WDPT implements DenoisableModel {
      * @param node  the node whose conditional probabilities will be perturbed
      * @param noise the {@link NoiseGenerator} to apply
      */
-    private void applyNoiseToNode(wdBayesNode node, NoiseGenerator noise) {
+    private void applyNoiseToNode(wdBayesNode node, NumericNoiseGenerator noise) {
         if (node == null || node.xyCount == null) return;
 
         int len = node.xyCount.length;
@@ -353,5 +373,13 @@ public class WDPT implements DenoisableModel {
      */
     public double getScore(Data data) {
         throw new UnsupportedOperationException("Method not implemented");
+    }
+
+    /**
+     * Gets the number of instances.
+     * * @return The number of instances.
+     */
+    public int getNumInstances() {
+        return this.numInstances;
     }
 }

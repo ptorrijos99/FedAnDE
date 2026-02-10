@@ -42,7 +42,7 @@ import fedAnDE.fusion.*;
 import fedAnDE.model.Classes;
 import fedAnDE.privacy.Gaussian_Noise;
 import fedAnDE.privacy.Laplace_Noise;
-import fedAnDE.privacy.NoiseGenerator;
+import fedAnDE.privacy.NumericNoiseGenerator;
 import fedAnDE.privacy.ZCDP_Noise;
 import weka.core.Instances;
 import weka.core.Utils;
@@ -56,7 +56,6 @@ import fedAnDE.convergence.Convergence;
 import fedAnDE.convergence.NoneConvergence;
 import fedAnDE.data.Data;
 import fedAnDE.data.Weka_Instances;
-import static fedAnDE.data.Weka_Instances.divide;
 import static fedAnDE.experiments.utils.ExperimentUtils.computeSensitivity;
 
 /**
@@ -93,10 +92,10 @@ public class CCBNExperiment {
      * @param seed The random seed for reproducibility of data splits.
      * @param suffix The suffix used to distinguish the output file or experiment version.
      */
-    public static void run(String folder, String datasetName, String[] discretizerOptions, String[] algorithmOptions, String[] clientOptions, String[] serverOptions, String[] dpOptions, int nClients, int nIterations, int nFolds, int seed, String suffix) {
+    public static void run(String folder, String datasetName, String[] discretizerOptions, String[] algorithmOptions, String[] clientOptions, String[] serverOptions, String[] dpOptions, int nClients, int nIterations, int nFolds, int seed, double alpha, String suffix, String nodeName) {
         // Get the cross-validation splits for each client
         String datasetPath = baseDatasetPath + folder + "/" + datasetName + ".arff";
-        Instances[][][] splits = divide(datasetName, datasetPath, nFolds, nClients, seed);
+        Instances[][][] splits = Weka_Instances.divide(datasetName, datasetPath, nFolds, nClients, seed, alpha);
 
         // Initialize the variables for running the federated learning
         String discretizerName = getDiscretizerName(discretizerOptions);
@@ -120,7 +119,7 @@ public class CCBNExperiment {
         convergence = new NoneConvergence();
         outputPath = "";
 
-        models = validate(datasetName, splits, seed, models, null, discretizerName, discretizerOptions, clientOptions, discretizerName, discretizerOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence, 1, outputPath);
+        models = validate(datasetName, splits, seed, models, null, discretizerName, discretizerOptions, clientOptions, discretizerName, discretizerOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence, 1, outputPath, alpha, nodeName);
 
         // STEP 2 — Federate AnDE synthetic classes
         buildStats = false;
@@ -131,7 +130,7 @@ public class CCBNExperiment {
         convergence = new NoneConvergence();
         outputPath = "";
 
-        modelsAnDE = validate(datasetName, splits, seed, modelsAnDE, null, discretizerName, discretizerOptions, clientOptions, "Classes_AnDE", algorithmOptions,  dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence,1, outputPath);
+        modelsAnDE = validate(datasetName, splits, seed, modelsAnDE, null, discretizerName, discretizerOptions, clientOptions, "Classes_AnDE", algorithmOptions,  dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence,1, outputPath, alpha, nodeName);
 
 
         // STEP 3 — Real training and fusion of the algorithms
@@ -144,7 +143,7 @@ public class CCBNExperiment {
         convergence = new NoneConvergence();
         outputPath = baseOutputPath + algorithmName + "_" + suffix;
 
-        validate(datasetName, splits, seed, models, modelsAnDE, discretizerName, discretizerOptions, clientOptions, algorithmName, algorithmOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence, nIterations, outputPath);
+        validate(datasetName, splits, seed, models, modelsAnDE, discretizerName, discretizerOptions, clientOptions, algorithmName, algorithmOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence, nIterations, outputPath, alpha, nodeName);
     }
 
     /**
@@ -322,9 +321,11 @@ public class CCBNExperiment {
      * @param algorithmOptions The options passed to the learning algorithm.
      * @param seed The random seed for reproducibility.
      * @param nClients The number of clients participating in federated learning.
+     * @param alpha The alpha parameter for non-IID data distribution.
+     * @param nodeName The name of the node executing the experiment.
      * @return A string encoding the current configuration for logging or output files.
      */
-    private static String getOperation(int fold, String[] discretizerOptions, String algorithmName, String[] algorithmOptions, String[] clientOptions, String[] dpOptions, int seed, int nClients) {
+    private static String getOperation(int fold, String[] discretizerOptions, String algorithmName, String[] algorithmOptions, String[] clientOptions, String[] dpOptions, int seed, int nClients, double alpha, String nodeName) {
         // Default values if options were not found
         String structure = null;
         String parameterLearning = null;
@@ -380,12 +381,12 @@ public class CCBNExperiment {
             }
             case "PT_NB" -> {
                 String combinedName = structure + "-" + parameterLearning;
-                return fold + "," + combinedName + "," + nBins + "," + seed + "," + nClients + ",false,false" + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity + "," + autoSensitivity;
+                return fold + "," + combinedName + "," + nodeName + "," + nBins + "," + seed + "," + nClients + ",false,false" + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity + "," + autoSensitivity + "," + alpha;
             }
             case "WDPT_CCBN" -> {
                 // Construct a composite name
                 String combinedName = structure + "-" + parameterLearning;
-                return fold + "," + combinedName + "," + nBins + "," + seed + "," + nClients + "," + fuseParameters + "," + fuseProbabilities + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity + "," + autoSensitivity;
+                return fold + "," + combinedName + "," + nodeName + "," + nBins + "," + seed + "," + nClients + "," + fuseParameters + "," + fuseProbabilities + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity + "," + autoSensitivity + "," + alpha;
             }
             // Add more algorithms here
             default -> {
@@ -413,17 +414,22 @@ public class CCBNExperiment {
      * @param outputPath The output path.
      * @return The models.
      */
-    protected static Object[] validate(String datasetName, Instances[][][] splits, int seed, Object[] models, Object[] modelsAnDE, String discretizerName, String[] discretizerOptions, String[] clientOptions, String algorithmName, String[] algorithmOptions, String[] dpOptions, boolean buildStats, boolean fusionStats, boolean stats, Fusion fusionClient, Fusion fusionServer, Convergence convergence, int nIterations, String outputPath) {
+    protected static Object[] validate(String datasetName, Instances[][][] splits, int seed, Object[] models, Object[] modelsAnDE, String discretizerName, String[] discretizerOptions, String[] clientOptions, String algorithmName, String[] algorithmOptions, String[] dpOptions, boolean buildStats, boolean fusionStats, boolean stats, Fusion fusionClient, Fusion fusionServer, Convergence convergence, int nIterations, String outputPath, double alpha, String nodeName) {
         // The first level of the splits corresponds to the folds
         int nFolds = splits.length;
 
-        if (!outputPath.isEmpty() && done(outputPath)) {
-            System.out.println("Skip: " + outputPath);
-            return models;
-        }
-
         for (int i = 0; i < nFolds; i++) {
-            // Copy the options to avoid modifying the original array
+            /// --- 1. SUPERSET CHECK ---
+            if (!outputPath.isEmpty() && isFoldCompleteInSuperset(outputPath, i, nIterations, alpha)) {
+                continue;
+            }
+
+            // --- 2. SANITIZATION ---
+            if (!outputPath.isEmpty()) {
+                cleanCorruptOrPartialFold(outputPath, i, nIterations, alpha);
+            }
+
+            // --- 3. PREPARE EXECUTION ---
             String[] discretizerOptionsTemp = Arrays.copyOf(discretizerOptions, discretizerOptions.length);
             String[] algorithmOptionsTemp = Arrays.copyOf(algorithmOptions, algorithmOptions.length);
             String[] clientOptionsTemp = Arrays.copyOf(clientOptions, clientOptions.length);
@@ -438,7 +444,9 @@ public class CCBNExperiment {
             if (modelsAnDE != null) {
                 modelAnDE = modelsAnDE[i];
             }
-            String operation = getOperation(i, discretizerOptionsTemp, algorithmName, algorithmOptionsTemp, clientOptionsTemp, dpOptionsTemp, seed, nClients);
+            String operation = getOperation(i, discretizerOptionsTemp, algorithmName, algorithmOptionsTemp, clientOptionsTemp, dpOptionsTemp, seed, nClients, alpha, nodeName);
+
+            System.out.println(">>> RUNNING: Dataset " + datasetName + " | Fold " + i);
 
             models[i] = run(datasetName, partitions, algorithmName, algorithmOptionsTemp, dpOptionsTemp, model, modelAnDE, buildStats, fusionStats, fusionClient, stats, fusionServer, convergence, nIterations, operation, outputPath);
         }
@@ -453,7 +461,7 @@ public class CCBNExperiment {
     }
 
     /**
-     * Creates a {@link NoiseGenerator} based on Weka-style differential privacy options.
+     * Creates a {@link NumericNoiseGenerator} based on Weka-style differential privacy options.
      * <p>
      * Accepted formats:
      * <ul>
@@ -464,9 +472,9 @@ public class CCBNExperiment {
      * If the input is empty or invalid, the method returns {@code null}.
      *
      * @param dpOptions array of command-line style options
-     * @return a configured {@link NoiseGenerator} instance or {@code null} if disabled or invalid
+     * @return a configured {@link NumericNoiseGenerator} instance or {@code null} if disabled or invalid
      */
-    private static NoiseGenerator getNoiseGenerator(String[] dpOptions) {
+    private static NumericNoiseGenerator getNoiseGenerator(String[] dpOptions) {
         if (dpOptions == null || dpOptions.length == 0) return null;
 
         // Copy the options to avoid modifying the original array
@@ -533,7 +541,7 @@ public class CCBNExperiment {
 
             LocalAlgorithm algorithm = getAlgorithm(algorithmName, algorithmOptions, model, modelAnDE);
 
-            NoiseGenerator dp = getNoiseGenerator(dpOptions);
+            NumericNoiseGenerator dp = getNoiseGenerator(dpOptions);
             try {
                 // Copy the dpOptions to avoid modifying the original array
                 dpOptions = Arrays.copyOf(dpOptions, dpOptions.length);
@@ -570,26 +578,31 @@ public class CCBNExperiment {
      */
     public static void main(String[] args) {
         // Default dataset and experimental configuration
+        String nodeName = "localhost";
+
         String folder = "Discretas";
-        String datasetName = "King-rook-vs-King";
-        int nClients = 5;
+        String datasetName = "Car_Evaluation";
+        int nClients = 20;
         int seed = 42;
         int nFolds = 2;
         int nIterations = 1;
 
         // Structure and parameter learning configurations
         String structure = "NB";  // Possible values: "NB", "A1DE", "A2DE", ..., "AnDE"
-        String parameterLearning = "Weka";  // Possible values: "dCCBN", "wCCBN", "eCCBN", and "Weka"
-        String maxIterations = "5";
+        String parameterLearning = "wCCBN";  // Possible values: "dCCBN", "wCCBN", "eCCBN", and "Weka"
+        String maxIterations = "1";
 
         // Fusion behaviour
         boolean fuseParameters = true;
         boolean fuseProbabilities = true;
         int nBins = -1;
 
+        // IID or no-IID
+        double alpha = 0; // IID if <=0
+
         // Differential privacy parameters
         String dpType = "Laplace";  // "Laplace", "Gaussian", "ZCDP", "None"
-        double epsilon = 0.1;      // for Laplace and Gaussian
+        double epsilon = 1000000;      // for Laplace and Gaussian
         double delta = 1e-5;     // only for Gaussian
         double rho = 0.1;        // only for ZCDP
         double sensitivity = 1.0;  // default for PT; smaller for WDPT
@@ -601,6 +614,7 @@ public class CCBNExperiment {
             int index = Integer.parseInt(args[0]);
             String paramsFileName = args[1];
             //int threads = Integer.parseInt(args[2]);
+            nodeName = args[2];
 
             // Read the parameters from args
             String[] parameters = null;
@@ -634,23 +648,34 @@ public class CCBNExperiment {
             fuseProbabilities = Boolean.parseBoolean(parameters[10]);
             nBins = Integer.parseInt(parameters[11]);
 
+            if (parameters.length > 12) {
+                try {
+                    alpha = Double.parseDouble(parameters[12]);
+                } catch (NumberFormatException e) {
+                    System.out.println("Warning: Could not parse Alpha at index 12. Defaulting to -1.");
+                    alpha = -1.0;
+                }
+            }
+
             // Add DP parameters if passed
-            if (parameters.length >= 14) {
-                dpType = parameters[12];
-                sensitivity = Double.parseDouble(parameters[13]);
-                autoSensitivity = Boolean.parseBoolean(parameters[14]);
+            if (parameters.length >= 16) {
+                dpType = parameters[13];
+                sensitivity = Double.parseDouble(parameters[14]);
+                autoSensitivity = Boolean.parseBoolean(parameters[15]);
 
                 if (dpType.equalsIgnoreCase("Laplace")) {
-                    epsilon = Double.parseDouble(parameters[15]);
+                    epsilon = Double.parseDouble(parameters[16]);
                 } else if (dpType.equalsIgnoreCase("Gaussian")) {
-                    epsilon = Double.parseDouble(parameters[15]);
+                    epsilon = Double.parseDouble(parameters[16]);
                 } else if (dpType.equalsIgnoreCase("ZCDP")) {
-                    rho = Double.parseDouble(parameters[15]);
+                    rho = Double.parseDouble(parameters[16]);
                 }
 
                 if (dpType.equalsIgnoreCase("Gaussian")) {
-                    delta = Double.parseDouble(parameters[16]);
+                    delta = Double.parseDouble(parameters[17]);
                 }
+            } else {
+                dpType = "None";
             }
         }
 
@@ -683,9 +708,277 @@ public class CCBNExperiment {
         // Create output suffix for result identification
         String suffix = datasetName + "_" + nBins + "_" + structure + "_" + parameterLearning + "_" + maxIterations + "_" + fuseParameters + "_" + fuseProbabilities
                 + "_" + dpType + "_" + epsilon + "_" + delta + "_" + rho + "_" + sensitivity + "_" + autoSensitivity
-                + "_" + nClients + "_" + seed + "_" + nIterations + "_" + nFolds + ".csv";
+                + "_" + nClients + "_" + seed + "_" + nIterations + "_" + nFolds + "_a" + alpha + ".csv";
 
         // Run the experiment
-        CCBNExperiment.run(folder, datasetName, discretizerOptions, algorithmOptions, clientOptions, serverOptions, dpOptions, nClients, nIterations, nFolds, seed, suffix);
+        CCBNExperiment.run(folder, datasetName, discretizerOptions, algorithmOptions, clientOptions, serverOptions, dpOptions, nClients, nIterations, nFolds, seed, alpha, suffix, nodeName);
+    }
+
+    /**
+     * Scans for any result file that matches the experiment configuration AND the specific Alpha.
+     * Returns TRUE if and only if a file exists that:
+     * 1. Has equal or more iterations than required.
+     * 2. Contains the specific 'foldToCheck' fully completed (reached target iterations).
+     * 3. Exists and is valid in BOTH 'Build' and 'Fusion' directories.
+     * 4. Matches the target alpha value.
+     */
+    /**
+     * Scans for any result file that matches the experiment configuration AND an equivalent Alpha.
+     * Updated to handle IID equivalence (e.g., finding ..._a-1.csv when target is ..._a-10.csv).
+     */
+    private static boolean isFoldCompleteInSuperset(String targetFilename, int foldToCheck, int targetIterations, double targetAlpha) {
+        String[] subDirs = {"results/Client/Build/", "results/Client/Fusion/"};
+
+        if (!targetFilename.endsWith(".csv")) return false;
+
+        // Expected format: ..._Seed_Iterations_Folds_aAlpha.csv
+        String rawName = targetFilename.substring(0, targetFilename.length() - 4);
+        String[] parts = rawName.split("_");
+
+        if (parts.length < 4) return false;
+
+        // Relative positions from the end:
+        // len-1: aAlpha  (e.g., "a-10.0")
+        // len-2: Folds   (e.g., "5")
+        // len-3: Iters   (e.g., "50")
+        // len-4: Seed    (The last element of the fixed prefix)
+
+        // 1. Construct the immutable prefix (Everything up to and including the Seed)
+        StringBuilder prefixBuilder = new StringBuilder();
+        for(int i=0; i <= parts.length - 4; i++) {
+            prefixBuilder.append(parts[i]).append("_");
+        }
+        String searchPrefix = prefixBuilder.toString(); // e.g., "Flare_..._42_"
+
+        // 2. Construct the partial suffix identifying the folds (e.g., "_5_a")
+        // We look for something having the same folds and starting with "_a" for alpha
+        String foldPart = "_" + parts[parts.length - 2] + "_a";
+
+        java.io.File buildDir = new java.io.File(subDirs[0]);
+        if (!buildDir.exists()) return false;
+
+        // 3. Search for candidates matching Prefix and Folds (ignoring Iterations and exact Alpha value for now)
+        java.io.File[] candidates = buildDir.listFiles((d, name) ->
+                name.startsWith(searchPrefix) &&
+                        name.contains(foldPart) &&
+                        name.endsWith(".csv")
+        );
+
+        if (candidates == null) return false;
+
+        for (java.io.File candidate : candidates) {
+            try {
+                String name = candidate.getName();
+                String nameNoExt = name.substring(0, name.length() - 4);
+
+                // Extract Alpha from the candidate filename
+                // Alpha is after the last "_a"
+                int lastA = nameNoExt.lastIndexOf("_a");
+                String alphaStr = nameNoExt.substring(lastA + 2); // Skip "_a"
+                double fileAlpha = Double.parseDouble(alphaStr);
+
+                // --- IID EQUIVALENCE CHECK ---
+                // Treat any value <= 0 as "IID"
+                boolean targetIsIID = targetAlpha <= 0.0001;
+                boolean fileIsIID = fileAlpha <= 0.0001;
+
+                // If experiment types differ (one IID, one Non-IID), skip
+                if (targetIsIID != fileIsIID) {
+                    continue;
+                }
+                // If both are Non-IID (positive), check for exact match
+                if (!targetIsIID && Math.abs(fileAlpha - targetAlpha) > 0.0001) {
+                    continue;
+                }
+                // ---------------------------------
+
+                // Extract Iterations (located between prefix and fold part)
+                // Since filename structure might vary in length, use split
+                String[] candParts = nameNoExt.split("_");
+                // Assuming standard structure, iterations are at index len-3
+                int fileConfigIters = Integer.parseInt(candParts[candParts.length - 3]);
+
+                // Check if the found file has enough iterations
+                if (fileConfigIters < targetIterations) continue;
+
+                // Deep validation of content
+                boolean validInBuild = isFileValidForFold(subDirs[0] + name, foldToCheck, targetIterations, targetAlpha);
+                boolean validInFusion = isFileValidForFold(subDirs[1] + name, foldToCheck, targetIterations, targetAlpha);
+
+                if (validInBuild && validInFusion) {
+                    System.out.println(">>> SKIP: Fold " + foldToCheck + " complete in equivalent file " + name + " (Alpha " + fileAlpha + " ~ " + targetAlpha + ")");
+                    return true;
+                }
+
+            } catch (Exception e) {
+                // Ignore malformed files
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a specific CSV file contains the fold, reached the target iterations,
+     * AND ensures the data belongs to the correct alpha value (treating <=0 as equivalent IID).
+     */
+    private static boolean isFileValidForFold(String path, int foldToCheck, int targetIterations, double targetAlpha) {
+        java.io.File file = new java.io.File(path);
+        if (!file.exists()) return false;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line = br.readLine(); // Header
+            if (line == null) return false;
+
+            String[] headers = line.split(",");
+            int cvIndex = -1;
+            int iterIndex = -1;
+            int alphaIndex = -1;
+
+            for (int i = 0; i < headers.length; i++) {
+                String h = headers[i].trim();
+                if (h.equalsIgnoreCase("cv")) cvIndex = i;
+                else if (h.equalsIgnoreCase("iteration")) iterIndex = i;
+                else if (h.equalsIgnoreCase("alpha")) alphaIndex = i;
+            }
+
+            if (cvIndex == -1 || iterIndex == -1) return false;
+
+            int maxIterFound = -1;
+
+            while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                String[] values = line.split(",");
+                if (values.length <= Math.max(Math.max(cvIndex, iterIndex), alphaIndex)) continue;
+
+                try {
+                    // 1. Check Alpha Logic
+                    if (alphaIndex != -1) {
+                        double rowAlpha = Double.parseDouble(values[alphaIndex].trim());
+
+                        // LOGIC UPDATE: Treat any value <= 0 as "IID"
+                        boolean targetIsIID = targetAlpha <= 0.0001;
+                        boolean rowIsIID = rowAlpha <= 0.0001;
+
+                        if (targetIsIID && rowIsIID) {
+                            // Both are IID (e.g., -1 and 0), so they match. Proceed.
+                        } else if (targetIsIID != rowIsIID) {
+                            // One is IID, the other is Non-IID. Mismatch.
+                            continue;
+                        } else {
+                            // Both are Non-IID (positive). Check exact value.
+                            if (Math.abs(rowAlpha - targetAlpha) > 0.0001) continue;
+                        }
+                    } else if (targetAlpha > 0.0001) {
+                        // If we want Non-IID but the file has no alpha column (old IID file), it's invalid.
+                        return false;
+                    }
+
+                    // 2. Check Fold
+                    int currentCV = Integer.parseInt(values[cvIndex].trim());
+                    if (currentCV == foldToCheck) {
+                        // 3. Check Iteration
+                        int currentIter = Integer.parseInt(values[iterIndex].trim());
+                        if (currentIter > maxIterFound) maxIterFound = currentIter;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
+            return maxIterFound >= targetIterations;
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Ensures strict consistency. If the superset check failed, we assume the data currently
+     * in the files is either incomplete (e.g. iter 3 of 5) or inconsistent.
+     * <p>
+     * Action: It WIPES all rows belonging to 'foldToCheck' AND 'targetAlpha' from both Build and Fusion files.
+     * This forces a clean restart for that specific fold configuration.
+     * </p>
+     */
+    private static void cleanCorruptOrPartialFold(String targetFilename, int foldToCheck, int targetIterations, double targetAlpha) {
+        String[] subDirs = {"results/Client/Build/", "results/Client/Fusion/"};
+
+        for (String dir : subDirs) {
+            String fullPath = dir + targetFilename;
+            java.io.File file = new java.io.File(fullPath);
+
+            if (!file.exists()) continue;
+
+            try {
+                List<String> lines = new ArrayList<>();
+                try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                    String line;
+                    while ((line = br.readLine()) != null) lines.add(line);
+                }
+
+                if (lines.isEmpty()) continue;
+
+                String header = lines.get(0);
+                String[] headers = header.split(",");
+                int cvIndex = -1;
+                int alphaIndex = -1;
+
+                for (int i = 0; i < headers.length; i++) {
+                    if (headers[i].trim().equalsIgnoreCase("cv")) cvIndex = i;
+                    if (headers[i].trim().equalsIgnoreCase("alpha")) alphaIndex = i;
+                }
+
+                if (cvIndex == -1) continue;
+
+                List<String> cleanLines = new ArrayList<>();
+                cleanLines.add(header);
+                boolean dirtyFound = false;
+
+                for (int i = 1; i < lines.size(); i++) {
+                    String line = lines.get(i);
+                    if (line.trim().isEmpty()) continue;
+
+                    try {
+                        String[] values = line.split(",");
+                        int cv = Integer.parseInt(values[cvIndex].trim());
+
+                        boolean sameAlpha = true;
+                        if (alphaIndex != -1 && values.length > alphaIndex) {
+                            double rowAlpha = Double.parseDouble(values[alphaIndex].trim());
+
+                            // LOGIC UPDATE: Equivalence check for IID
+                            boolean targetIsIID = targetAlpha <= 0.0001;
+                            boolean rowIsIID = rowAlpha <= 0.0001;
+
+                            if (targetIsIID && rowIsIID) {
+                                sameAlpha = true; // Both are IID, so it's a match
+                            } else if (targetIsIID != rowIsIID) {
+                                sameAlpha = false; // Different types
+                            } else {
+                                // Both positive, check value
+                                if (Math.abs(rowAlpha - targetAlpha) > 0.0001) sameAlpha = false;
+                            }
+                        }
+
+                        // Remove row ONLY if it matches the fold AND the equivalent alpha
+                        if (cv == foldToCheck && sameAlpha) {
+                            dirtyFound = true;
+                        } else {
+                            cleanLines.add(line);
+                        }
+                    } catch (Exception e) {
+                        cleanLines.add(line);
+                    }
+                }
+
+                if (dirtyFound) {
+                    System.out.println(">>> CLEANING: Wiping incomplete data for Fold " + foldToCheck + " (Alpha eq. " + targetAlpha + ") in " + fullPath);
+                    try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(file))) {
+                        for (String l : cleanLines) pw.println(l);
+                    }
+                }
+
+            } catch (Exception e) {
+                System.err.println("Warning: Failed to clean file " + fullPath + ": " + e.getMessage());
+            }
+        }
     }
 }

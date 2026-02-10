@@ -39,7 +39,7 @@ package fedAnDE.privacy;
  * ε and δ.
  * </p>
  */
-public class Gaussian_Noise implements NoiseGenerator {
+public class Gaussian_Noise implements NumericNoiseGenerator {
 
     private double sigma;
     private double epsilon;

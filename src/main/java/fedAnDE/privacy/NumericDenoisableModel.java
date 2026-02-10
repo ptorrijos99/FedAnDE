@@ -22,7 +22,7 @@
  *  SOFTWARE.
  */
 /**
- *    DenoisableModel.java
+ *    NumericDenoisableModel.java
  *    Copyright (C) 2025 Universidad de Castilla-La Mancha, España
  *
  * @author Pablo Torrijos Arenas
@@ -31,22 +31,19 @@
 
 package fedAnDE.privacy;
 
-import fedAnDE.model.Model;
-
 /**
- * General interface for models that support the injection of differential privacy noise.
+ * Interface for models that support the injection of differential privacy noise to numeric values.
+ * <p>
+ * Implementing classes are expected to apply a given {@link NumericNoiseGenerator}
+ * to their internal structures (e.g., class counts, conditional probabilities, parameters)
+ * in order to ensure privacy-preserving learning.
+ * </p>
+ * <p>
+ * This interface is intended to be used with models such as {@code PT} or {@code WDPT}
+ * that contain numerical components which may leak information and therefore require noise injection.
+ * </p>
  */
-public interface DenoisableModel extends Model {
+public interface NumericDenoisableModel extends DenoisableModel {
 
-    /**
-     * Applies differential privacy noise to the internal representation of the model.
-     * <p>
-     * The model is responsible for identifying which internal values require protection
-     * and applying the noise appropriately using the provided {@link NoiseGenerator}.
-     * </p>
-     *
-     * @param noise the noise generator to use (e.g., Laplace, Gaussian, zCDP)
-     */
-    void applyNoise(NoiseGenerator noise);
 
 }

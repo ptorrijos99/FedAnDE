@@ -34,6 +34,7 @@ import weka.classifiers.AbstractClassifier;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.Instances;
+import weka.estimators.Estimator;
 import weka.estimators.DiscreteEstimator;
 
 import java.util.List;
@@ -44,16 +45,16 @@ import java.util.Map;
  */
 import fedAnDE.data.Data;
 import fedAnDE.data.Weka_Instances;
-import fedAnDE.privacy.DenoisableModel;
 import fedAnDE.privacy.NoiseGenerator;
-import weka.estimators.Estimator;
+import fedAnDE.privacy.NumericDenoisableModel;
+import fedAnDE.privacy.NumericNoiseGenerator;
 
 import static fedAnDE.experiments.utils.ExperimentUtils.*;
 
 /**
  * A class representing naive Bayes.
  */
-public class PT implements DenoisableModel {
+public class PT implements NumericDenoisableModel {
 
     /**
      * The list of classifiers (can be only one, for example for Naive Bayes).
@@ -71,9 +72,14 @@ public class PT implements DenoisableModel {
     public final List<Map<String, Integer>> syntheticClassMaps;
 
     /**
+     * Number of instances used to train this model.
+     */
+    private int numInstances = 0;
+
+    /**
      * The header for the file.
      */
-    private String header = "bbdd,id,cv,algorithm,bins,seed,nClients,fusParams,fusProbs,dptype,epsilon,delta,rho,sensitivity,autoSens,epoch,iteration,instances,maxIterations,trAcc,trPr,trRc,trF1,trTime,teAcc,tePr,teRc,teF1,teTime,time\n";
+    private final String header = "bbdd,id,cv,algorithm,node,bins,seed,nClients,fusParams,fusProbs,dptype,epsilon,delta,rho,sensitivity,autoSens,alpha,epoch,iteration,instances,maxIterations,trAcc,trPr,trRc,trF1,trLogLoss,trBrier,trTime,teAcc,tePr,teRc,teF1,teLogLoss,teBrier,teTime,time\n";
 
     /**
      * Constructor
@@ -85,6 +91,14 @@ public class PT implements DenoisableModel {
         this.ensemble = ensemble;
         this.combinations = combinations;
         this.syntheticClassMaps = syntheticClassMaps;
+    }
+
+    /**
+     * Constructor with numInstances
+     */
+    public PT(List<AbstractClassifier> ensemble, List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps, int numInstances) {
+        this(ensemble, combinations, syntheticClassMaps);
+        this.numInstances = numInstances;
     }
 
     /**
@@ -105,20 +119,24 @@ public class PT implements DenoisableModel {
      */
     @Override
     public void applyNoise(NoiseGenerator noise) {
+        if (!(noise instanceof NumericNoiseGenerator numericNoise)) {
+            throw new IllegalArgumentException("Noise generator must be a NumericNoiseGenerator");
+        }
+
         for (AbstractClassifier classifier : ensemble) {
             if (classifier instanceof FilteredClassifier fc) {
                 if (fc.getClassifier() instanceof NaiveBayes nb) {
 
                     // Privatize class distribution
                     DiscreteEstimator classDist = (DiscreteEstimator) nb.getClassEstimator();
-                    applyNoiseToEstimator(noise, classDist);
+                    applyNoiseToEstimator(numericNoise, classDist);
 
                     // Privatize conditional estimators (conditional probabilities for each attribute given class)
                     Estimator[][] conds = nb.getConditionalEstimators();
                     for (Estimator[] cond : conds) {
                         for (Estimator est : cond) {
                             if (est instanceof DiscreteEstimator de) {
-                                applyNoiseToEstimator(noise, de);
+                                applyNoiseToEstimator(numericNoise, de);
                             }
                         }
                     }
@@ -135,10 +153,10 @@ public class PT implements DenoisableModel {
      * to obtain a valid probability distribution. The estimator is then updated to reflect the privatized distribution.
      * </p>
      *
-     * @param noise          the {@link NoiseGenerator} that adds Laplace noise to the counts
+     * @param noise          the {@link NumericNoiseGenerator} that adds Laplace noise to the counts
      * @param estimator      the {@link DiscreteEstimator} containing the counts to privatize
      */
-    void applyNoiseToEstimator(NoiseGenerator noise, DiscreteEstimator estimator) {
+    void applyNoiseToEstimator(NumericNoiseGenerator noise, DiscreteEstimator estimator) {
         int k = estimator.getNumSymbols();
 
         /* 1. original counts */
@@ -265,4 +283,11 @@ public class PT implements DenoisableModel {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
+    /**
+     * Gets the number of instances.
+     * * @return The number of instances.
+     */
+    public int getNumInstances() {
+        return this.numInstances;
+    }
 }

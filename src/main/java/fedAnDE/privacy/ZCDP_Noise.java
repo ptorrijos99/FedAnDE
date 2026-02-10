@@ -39,7 +39,7 @@ package fedAnDE.privacy;
  * where σ is computed as {@code Δ / sqrt(2ρ)}.
  * </p>
  */
-public class ZCDP_Noise implements NoiseGenerator {
+public class ZCDP_Noise implements NumericNoiseGenerator {
 
     private double sigma;
     private double rho;
