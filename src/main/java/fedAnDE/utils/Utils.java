@@ -1,4 +1,4 @@
-package fedAnDE.experiments.utils;
+package fedAnDE.utils;
 
 import weka.classifiers.bayes.net.estimate.DiscreteEstimatorBayes;
 import weka.core.Attribute;

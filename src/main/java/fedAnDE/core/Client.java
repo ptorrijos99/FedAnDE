@@ -29,7 +29,7 @@
  *
  */
 
-package fedAnDE;
+package fedAnDE.core;
 
 import fedAnDE.algorithms.LocalAlgorithm;
 import fedAnDE.data.Data;
@@ -42,7 +42,8 @@ import fedAnDE.privacy.NumericNoiseGenerator;
 public class Client {
 
     /**
-     * The Fusion operator that will be used to perform the fusion of the global model that the server
+     * The Fusion operator that will be used to perform the fusion of the global
+     * model that the server
      * sends with the local model of the client
      */
     private final Fusion localFusion;
@@ -86,19 +87,22 @@ public class Client {
      * The fusion stats flag.
      */
     private boolean fusionStats = false;
-    
+
     private String path;
 
     private int iteration;
-    
+
     private String experimentName;
 
     /**
      * Constructor of the class Client.
-     * @param localFusion The Fusion operator that will be used to perform the fusion of the global model that the server
-     * sends with the local model of the client
+     * 
+     * @param localFusion    The Fusion operator that will be used to perform the
+     *                       fusion of the global model that the server
+     *                       sends with the local model of the client
      * @param localAlgorithm The local algorithm used to build the local model.
-     * @param data The data that the client will use to build the local model.
+     * @param data           The data that the client will use to build the local
+     *                       model.
      */
     public Client(Fusion localFusion, LocalAlgorithm localAlgorithm, Data data) {
         this.localFusion = localFusion;
@@ -109,11 +113,15 @@ public class Client {
 
     /**
      * Constructor of the class Client with noise generator.
-     * @param localFusion The Fusion operator that will be used to perform the fusion of the global model that the server
-     * sends with the local model of the client
+     * 
+     * @param localFusion    The Fusion operator that will be used to perform the
+     *                       fusion of the global model that the server
+     *                       sends with the local model of the client
      * @param localAlgorithm The local algorithm used to build the local model.
-     * @param data The data that the client will use to build the local model.
-     * @param noiseGenerator The noise generator used to apply the differential privacy.
+     * @param data           The data that the client will use to build the local
+     *                       model.
+     * @param noiseGenerator The noise generator used to apply the differential
+     *                       privacy.
      */
     public Client(Fusion localFusion, LocalAlgorithm localAlgorithm, Data data, NoiseGenerator noiseGenerator) {
         this(localFusion, localAlgorithm, data);
@@ -122,11 +130,14 @@ public class Client {
 
     /**
      * Constructor of the class Client with starting local model.
-     * @param localFusion The Fusion operator that will be used to perform the fusion of the global model that the server
-     * sends with the local model of the client
-     * @param localModel The local model of the client.
+     * 
+     * @param localFusion    The Fusion operator that will be used to perform the
+     *                       fusion of the global model that the server
+     *                       sends with the local model of the client
+     * @param localModel     The local model of the client.
      * @param localAlgorithm The local algorithm used to build the local model.
-     * @param data The data that the client will use to build the local model.
+     * @param data           The data that the client will use to build the local
+     *                       model.
      */
     public Client(Fusion localFusion, Model localModel, LocalAlgorithm localAlgorithm, Data data) {
         this(localFusion, localAlgorithm, data);
@@ -134,15 +145,21 @@ public class Client {
     }
 
     /**
-     * Constructor of the class Client with starting local model and noise generator.
-     * @param localFusion The Fusion operator that will be used to perform the fusion of the global model that the server
-     * sends with the local model of the client
-     * @param localModel The local model of the client.
+     * Constructor of the class Client with starting local model and noise
+     * generator.
+     * 
+     * @param localFusion    The Fusion operator that will be used to perform the
+     *                       fusion of the global model that the server
+     *                       sends with the local model of the client
+     * @param localModel     The local model of the client.
      * @param localAlgorithm The local algorithm used to build the local model.
-     * @param data The data that the client will use to build the local model.
-     * @param noiseGenerator The noise generator used to apply the differential privacy.
+     * @param data           The data that the client will use to build the local
+     *                       model.
+     * @param noiseGenerator The noise generator used to apply the differential
+     *                       privacy.
      */
-    public Client(Fusion localFusion, Model localModel, LocalAlgorithm localAlgorithm, Data data, NumericNoiseGenerator noiseGenerator) {
+    public Client(Fusion localFusion, Model localModel, LocalAlgorithm localAlgorithm, Data data,
+            NumericNoiseGenerator noiseGenerator) {
         this(localFusion, localModel, localAlgorithm, data);
         this.noiseGenerator = noiseGenerator;
     }
@@ -151,13 +168,13 @@ public class Client {
      * Build the local model of the client.
      */
     protected void buildLocalModel() {
-        iteration = iteration+1;
-        
+        iteration = iteration + 1;
+
         double start = System.currentTimeMillis();
         localModel = localAlgorithm.buildLocalModel(localModel, data);
         double time = (System.currentTimeMillis() - start) / 1000;
-        
-        if (buildStats)  {
+
+        if (buildStats) {
             localModel.saveStats(experimentName, "Client/Build", path, nClients, id, data, iteration, time);
         }
     }
@@ -166,7 +183,8 @@ public class Client {
      * Apply the differential privacy to the local model if defined.
      */
     protected void applyDifferentialPrivacy() {
-        if (noiseGenerator == null || !(localModel instanceof DenoisableModel dm)) return;
+        if (noiseGenerator == null || !(localModel instanceof DenoisableModel dm))
+            return;
         dm.applyNoise(noiseGenerator);
     }
 
@@ -174,6 +192,7 @@ public class Client {
      * Perform the fusion of the global model that the server
      * sends with the local model of the client.
      * Then, if defined, a refinement of the local model is performed.
+     * 
      * @param globalModel The global model that the server sends.
      */
     protected void fusion(Model globalModel) {
@@ -187,14 +206,14 @@ public class Client {
         if (fusionStats) {
             localModel.saveStats(experimentName, "Client/Fusion", path, nClients, id, data, iteration, time);
         }
-        
+
         // If defined, perform a refinement to the local model
         if (!localAlgorithm.getRefinementName().equals("None")) {
             start = System.currentTimeMillis();
             localModel = localAlgorithm.refinateLocalModel(oldModel, localModel, data);
             time = (System.currentTimeMillis() - start) / 1000;
 
-            if (fusionStats)  {
+            if (fusionStats) {
                 localModel.saveStats(experimentName, "Client/Refinement", path, nClients, id, data, iteration, time);
             }
         }
@@ -202,6 +221,7 @@ public class Client {
 
     /**
      * Set the ID of the client.
+     * 
      * @param id The ID of the client.
      */
     public void setID(int id) {
@@ -210,6 +230,7 @@ public class Client {
 
     /**
      * Set the number of clients.
+     * 
      * @param nClients The number of clients.
      */
     public void setNClients(int nClients) {
@@ -218,6 +239,7 @@ public class Client {
 
     /**
      * Get the ID of the client.
+     * 
      * @return The ID of the client.
      */
     public int getID() {
@@ -226,6 +248,7 @@ public class Client {
 
     /**
      * Get the local model of the client.
+     * 
      * @return The local Model of the client.
      */
     public Model getLocalModel() {
@@ -243,7 +266,8 @@ public class Client {
 
     /**
      * Set the stats flag.
-     * @param buildStats The stats flag.
+     * 
+     * @param buildStats  The stats flag.
      * @param fusionStats The stats flag.
      */
     public void setStats(boolean buildStats, boolean fusionStats, String path) {

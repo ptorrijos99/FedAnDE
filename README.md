@@ -11,16 +11,24 @@ The framework supports federated training of **Generative**, **Discriminative**,
   - **Generative:** Aggregates privacy-preserving sufficient statistics (counts).
   - **Discriminative:** Federates log-linear weights via gradient-based optimization.
   - **Hybrid:** Combines local generative priors with global discriminative weights, providing privacy by design. Optionally, the counts can be also federated as in the generative mode.
-- **Differential Privacy:** Implements $\varepsilon$-DP using the Laplace mechanism for robust privacy protection of the generative counts, more vulnerable because exposes directly the data counts. Instead, the discriminative parameters don't have a real meaning, as in neural networks.
+- **Differential Privacy:**
+  - **Generative:** Implements $\varepsilon$-DP using the Laplace mechanism to perturb the sufficient statistics (counts).
+  - **Hybrid:** Can use the same mechanism for the generative part (structure/priors).
+  - **Discriminative:** Does not implement differential privacy.
 
 
 ## Project Structure
 
-- `src/main/java/fedAnDE/`: Source code for the federated framework.
-  - `model/`: Implementation of AnDE models (PT, WDPT).
-  - `fusion/`: Aggregation logic for Server (Generative/Discriminative).
-  - `privacy/`: Differential Privacy mechanisms (Laplace, Gaussian, ZCDP).
-  - `experiments/`: Scripts to reproduce the paper's experiments.
+The source code is organized in `src/main/java/fedAnDE/`:
+
+- `core/`: Core federated learning components (`Client`, `Server`).
+- `model/`: Implementation of AnDE models (`WDPT` for discriminative/hybrid, `PT` for generative).
+- `fusion/`: Aggregation logic and fusion strategies.
+- `privacy/`: Differential Privacy mechanisms (Laplace, Gaussian, ZCDP).
+- `algorithms/`: Local learning algorithms.
+- `experiments/`: Experiment execution logic.
+  - `ExperimentRunner.java`: Main entry point for running experiments.
+- `utils/`: Shared utility classes.
 
 ## Usage
 
@@ -28,26 +36,33 @@ The framework supports federated training of **Generative**, **Discriminative**,
 - Java 17 or higher
 - Maven
 
-### Running Experiments
-The main entry point for experiments is `fedAnDE.experiments.CCBNExperiment`.
-
-Example command to run a federated experiment:
+### Building the Project
+To build the project and generate the JAR file with dependencies:
 
 ```bash
-java -cp target/fedAnDE-1.0-SNAPSHOT.jar fedAnDE.experiments.CCBNExperiment \
-    <folder> <dataset> <nClients> <seed> <nFolds> <nIterations> \
-    <structure> <parameterLearning> <maxIterations> \
-    <fuseParameters> <fuseProbabilities> <nBins> \
-    <alpha> <dpType> <sensitivity> <autoSens> <epsilon>
+mvn clean package
 ```
 
-**Parameters:**
-- `structure`: `NB`, `A1DE`, `A2DE`
-- `parameterLearning`: `Weka` (Generative), `dCCBN` (Discriminative), `wCCBN` (Hybrid)
-- `dpType`: `None`, `Laplace`
+### Running Experiments
+The main entry point is `fedAnDE.experiments.ExperimentRunner`. You can run it directly or via the legacy wrapper `CCBNExperiment`.
 
-## 🔬 Reproducible Research
-This codebase is designed to be fully reproducible. All random seeds are fixed for data partitioning and differential privacy noise generation.
+**Command-line Usage:**
 
----
-*Anonymized for peer review.*
+```bash
+java -cp target/bayesfl-1.0-SNAPSHOT-jar-with-dependencies.jar fedAnDE.experiments.ExperimentRunner \
+    <lineIndex> <paramsFile> <nodeName>
+```
+
+*   `<lineIndex>`: The 0-based index of the line to execute from the parameters file (e.g., `0` for the first line). This allows running specific experiments from a batch file.
+*   `<paramsFile>`: Path to a file containing experiment parameters.
+*   `<nodeName>`: Identifier for the node (e.g., "localhost").
+
+**Parameters File Format:**
+The parameters file should contain space-separated values for:
+`folder dataset nClients seed nFolds nIterations structure parameterLearning maxIterations fuseParameters fuseProbabilities nBins [alpha] [dpType] [sensitivity] [autoSens] [epsilon] [delta/rho]`
+
+**Example:**
+To run a default experiment (if no args provided):
+```bash
+java -cp target/bayesfl-1.0-SNAPSHOT-jar-with-dependencies.jar fedAnDE.experiments.ExperimentRunner
+```

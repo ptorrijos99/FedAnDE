@@ -49,7 +49,7 @@ import fedAnDE.privacy.NoiseGenerator;
 import fedAnDE.privacy.NumericDenoisableModel;
 import fedAnDE.privacy.NumericNoiseGenerator;
 
-import static fedAnDE.experiments.utils.ExperimentUtils.*;
+import static fedAnDE.utils.ExperimentUtils.*;
 
 /**
  * A class representing naive Bayes.

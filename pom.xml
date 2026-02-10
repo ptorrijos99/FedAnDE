@@ -109,7 +109,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>fedAnDE.experiments.ClusterExperiment</mainClass>
+                            <mainClass>fedAnDE.experiments.ExperimentRunner</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

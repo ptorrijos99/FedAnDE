@@ -29,7 +29,7 @@
  *
  */
 
-package fedAnDE.experiments.utils;
+package fedAnDE.utils;
 
 import fedAnDE.data.Data;
 import weka.classifiers.AbstractClassifier;

@@ -53,8 +53,7 @@ import fedAnDE.privacy.NoiseGenerator;
 import fedAnDE.privacy.NumericDenoisableModel;
 import fedAnDE.privacy.NumericNoiseGenerator;
 
-
-import static fedAnDE.experiments.utils.ExperimentUtils.*;
+import static fedAnDE.utils.ExperimentUtils.*;
 
 /**
  * A class representing a federated AnDE-style discriminative model.
@@ -106,15 +105,16 @@ public class WDPT implements NumericDenoisableModel {
     /**
      * Constructor.
      *
-     * @param trees The list of parameter trees.
-     * @param classifiers The list of classifiers.
-     * @param minimizers The list of minimizers.
-     * @param combinations The list of attribute combinations.
+     * @param trees              The list of parameter trees.
+     * @param classifiers        The list of classifiers.
+     * @param minimizers         The list of minimizers.
+     * @param combinations       The list of attribute combinations.
      * @param syntheticClassMaps The synthetic class mappings.
-     * @param functions The list of objective functions.
+     * @param functions          The list of objective functions.
      */
     public WDPT(List<wdBayesParametersTree> trees, List<AbstractClassifier> classifiers, List<Minimizer> minimizers,
-                List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps, List<ObjectiveFunction> functions) {
+            List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps,
+            List<ObjectiveFunction> functions) {
         this.trees = trees;
         this.classifiers = classifiers;
         this.minimizers = minimizers;
@@ -127,24 +127,32 @@ public class WDPT implements NumericDenoisableModel {
      * Constructor with numInstances.
      */
     public WDPT(List<wdBayesParametersTree> trees, List<AbstractClassifier> classifiers, List<Minimizer> minimizers,
-                List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps, List<ObjectiveFunction> functions,
-                int numInstances) {
+            List<int[]> combinations, List<Map<String, Integer>> syntheticClassMaps, List<ObjectiveFunction> functions,
+            int numInstances) {
         this(trees, classifiers, minimizers, combinations, syntheticClassMaps, functions);
         this.numInstances = numInstances;
     }
 
     /**
-     * Applies noise to the internal probabilistic parameters of the model using a {@link NumericNoiseGenerator}.
+     * Applies noise to the internal probabilistic parameters of the model using a
+     * {@link NumericNoiseGenerator}.
      * <p>
-     * This method perturbs the class prior probabilities and conditional distributions in each
-     * {@link wdBayesParametersTree}. Since the model stores these values in probability space
-     * (including log-probabilities), noise is added in linear space, then the results are renormalized
+     * This method perturbs the class prior probabilities and conditional
+     * distributions in each
+     * {@link wdBayesParametersTree}. Since the model stores these values in
+     * probability space
+     * (including log-probabilities), noise is added in linear space, then the
+     * results are renormalized
      * and converted back to log-space when needed.
      * </p>
-     * <p>This method does not guarantee formal (ε, δ)-differential privacy,
-     * as the original counts are not accessible and the sensitivity of probabilities is not bounded.
-     * Instead, this noise injection serves as a heuristic privacy-preserving mechanism that introduces
-     * uncertainty and impairs exact model reconstruction.</p>
+     * <p>
+     * This method does not guarantee formal (ε, δ)-differential privacy,
+     * as the original counts are not accessible and the sensitivity of
+     * probabilities is not bounded.
+     * Instead, this noise injection serves as a heuristic privacy-preserving
+     * mechanism that introduces
+     * uncertainty and impairs exact model reconstruction.
+     * </p>
      *
      * @param noise the {@link NoiseGenerator} used to sample perturbation noise
      */
@@ -171,26 +179,33 @@ public class WDPT implements NumericDenoisableModel {
     }
 
     /**
-     * Applies noise to a {@link wdBayesNode}'s conditional distribution stored in {@code xyCount[]}.
+     * Applies noise to a {@link wdBayesNode}'s conditional distribution stored in
+     * {@code xyCount[]}.
      * <p>
-     * The {@code xyCount[]} array contains log-probabilities of P(x | parents). This method:
+     * The {@code xyCount[]} array contains log-probabilities of P(x | parents).
+     * This method:
      * <ul>
-     *     <li>Exponentiates the values to retrieve probabilities</li>
-     *     <li>Adds noise using the given {@link NumericNoiseGenerator}</li>
-     *     <li>Renormalizes the result to form a valid probability distribution</li>
-     *     <li>Converts the values back to log-space and overwrites {@code xyCount[]}</li>
+     * <li>Exponentiates the values to retrieve probabilities</li>
+     * <li>Adds noise using the given {@link NumericNoiseGenerator}</li>
+     * <li>Renormalizes the result to form a valid probability distribution</li>
+     * <li>Converts the values back to log-space and overwrites
+     * {@code xyCount[]}</li>
      * </ul>
      * This process is applied recursively to all children in the trie.
      * </p>
-     * <p>Since noise is applied to normalized probabilities, the resulting privacy
-     * protection is heuristic and does not satisfy formal differential privacy without
-     * additional assumptions on sensitivity.</p>
+     * <p>
+     * Since noise is applied to normalized probabilities, the resulting privacy
+     * protection is heuristic and does not satisfy formal differential privacy
+     * without
+     * additional assumptions on sensitivity.
+     * </p>
      *
      * @param node  the node whose conditional probabilities will be perturbed
      * @param noise the {@link NoiseGenerator} to apply
      */
     private void applyNoiseToNode(wdBayesNode node, NumericNoiseGenerator noise) {
-        if (node == null || node.xyCount == null) return;
+        if (node == null || node.xyCount == null)
+            return;
 
         int len = node.xyCount.length;
         double[] probs = new double[len];
@@ -203,7 +218,7 @@ public class WDPT implements NumericDenoisableModel {
         for (int i = 0; i < len; i++) {
             noisy[i] = Math.max(noisy[i], 1e-9); // Avoid negative probabilities
         }
-        
+
         double[] renormalized = normalize(noisy);
 
         for (int i = 0; i < len; i++) {
@@ -220,11 +235,13 @@ public class WDPT implements NumericDenoisableModel {
     /**
      * Renormalizes a probability vector to ensure it sums to 1.
      * <p>
-     * This method adds lower bounds to avoid numerical instability from near-zero or negative values
+     * This method adds lower bounds to avoid numerical instability from near-zero
+     * or negative values
      * introduced by the noise. It then performs standard normalization.
      * </p>
      *
-     * @param values the noisy probability values (non-negative, not necessarily summing to 1)
+     * @param values the noisy probability values (non-negative, not necessarily
+     *               summing to 1)
      * @return a new normalized array representing a valid probability distribution
      */
     private double[] normalize(double[] values) {
@@ -239,7 +256,6 @@ public class WDPT implements NumericDenoisableModel {
         }
         return result;
     }
-
 
     /**
      * Gets the list of parameter trees.
@@ -319,16 +335,17 @@ public class WDPT implements NumericDenoisableModel {
      * Saves the statistics of the model.
      *
      * @param operation The operation (e.g. "Client/Build", "Server").
-     * @param epoch The epoch.
-     * @param path The output path.
-     * @param nClients The number of clients.
-     * @param id The client ID (-1 if server).
-     * @param data The training and test data.
+     * @param epoch     The epoch.
+     * @param path      The output path.
+     * @param nClients  The number of clients.
+     * @param id        The client ID (-1 if server).
+     * @param data      The training and test data.
      * @param iteration The current iteration.
-     * @param time The time taken (seconds).
+     * @param time      The time taken (seconds).
      */
     @Override
-    public void saveStats(String operation, String epoch, String path, int nClients, int id, Data data, int iteration, double time) {
+    public void saveStats(String operation, String epoch, String path, int nClients, int id, Data data, int iteration,
+            double time) {
         Weka_Instances weka = (Weka_Instances) data;
         Instances train = weka.getTrain();
         Instances test = weka.getTest();
@@ -357,7 +374,8 @@ public class WDPT implements NumericDenoisableModel {
     }
 
     /**
-     * Gets the score of the model. This method is unused and throws an exception if called.
+     * Gets the score of the model. This method is unused and throws an exception if
+     * called.
      *
      * @return The score of the model.
      */
@@ -366,7 +384,8 @@ public class WDPT implements NumericDenoisableModel {
     }
 
     /**
-     * Computes the score of the model. This method is unused and throws an exception if called.
+     * Computes the score of the model. This method is unused and throws an
+     * exception if called.
      * 
      * @param data The data.
      * @return The score of the model.

@@ -29,7 +29,9 @@
  *
  */
 
-package fedAnDE;
+package fedAnDE.core;
+
+// import fedAnDE.core.Client;
 
 import fedAnDE.convergence.Convergence;
 import fedAnDE.data.Data;
@@ -41,7 +43,8 @@ import java.util.Collection;
 public class Server {
 
     /**
-     * The Fusion operator that will be used to perform the fusion of the local models that the clients
+     * The Fusion operator that will be used to perform the fusion of the local
+     * models that the clients
      * send with the global model of the server.
      */
     private final Fusion globalFusion;
@@ -80,17 +83,19 @@ public class Server {
      * The data used only in experiments for the stats.
      */
     private Data data;
-    
+
     private String path;
 
     private String experimentName;
 
     /**
      * Constructor of the class Server.
-     * @param globalFusion The Fusion operator that will be used to perform the fusion of the local models that the clients
-     * send with the global model of the server.
-     * @param convergence The convergence criteria.
-     * @param clients The Clients that will be run.
+     * 
+     * @param globalFusion The Fusion operator that will be used to perform the
+     *                     fusion of the local models that the clients
+     *                     send with the global model of the server.
+     * @param convergence  The convergence criteria.
+     * @param clients      The Clients that will be run.
      */
     public Server(Fusion globalFusion, Convergence convergence, Collection<Client> clients) {
         this.globalFusion = globalFusion;
@@ -108,11 +113,13 @@ public class Server {
 
     /**
      * Constructor of the class Server with starting global model.
-     * @param globalFusion The Fusion operator that will be used to perform the fusion of the local models that the clients
-     * send with the global model of the server.
-     * @param globalModel The starting global model.
-     * @param convergence The convergence criteria.
-     * @param clients The Clients that will be run.
+     * 
+     * @param globalFusion The Fusion operator that will be used to perform the
+     *                     fusion of the local models that the clients
+     *                     send with the global model of the server.
+     * @param globalModel  The starting global model.
+     * @param convergence  The convergence criteria.
+     * @param clients      The Clients that will be run.
      */
     public Server(Fusion globalFusion, Model globalModel, Convergence convergence, Collection<Client> clients) {
         this(globalFusion, convergence, clients);
@@ -139,13 +146,14 @@ public class Server {
             }
 
             // 4. Check if any of the clients has changed their model
-            if (convergence.checkConvergence(localModels)) break;
+            if (convergence.checkConvergence(localModels))
+                break;
 
             // 5. Fuse the local models into a global model
             double start = System.currentTimeMillis();
             globalModel = globalFusion.fusion(localModels);
             double time = (System.currentTimeMillis() - start) / 1000;
-            
+
             if (stats) {
                 globalModel.saveStats(experimentName, "Server", path, clients.size(), -1, data, iteration, time);
             }
@@ -157,6 +165,7 @@ public class Server {
 
     /**
      * Set the stats flag.
+     * 
      * @param stats The stats flag.
      */
     public void setStats(boolean stats, String path) {
@@ -166,6 +175,7 @@ public class Server {
 
     /**
      * Sets the data used only in experiments for the stats.
+     * 
      * @param data The data used only in experiments for the stats.
      */
     public void setData(Data data) {
@@ -178,6 +188,7 @@ public class Server {
 
     /**
      * Sets the number of iterations of the algorithm.
+     * 
      * @param nIterations The number of iterations of the algorithm.
      */
     public void setnIterations(int nIterations) {
@@ -186,6 +197,7 @@ public class Server {
 
     /**
      * Get the global model of the server.
+     * 
      * @return The global model of the server.
      */
     public Model getGlobalModel() {
