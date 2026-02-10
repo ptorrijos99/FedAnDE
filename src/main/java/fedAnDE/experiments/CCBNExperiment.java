@@ -22,9 +22,9 @@
  *  SOFTWARE.
  */
 
- /**
- * Package containing experiments for federated Bayesian networks.
- */
+/**
+* Package containing experiments for federated Bayesian networks.
+*/
 package fedAnDE.experiments;
 
 /**
@@ -74,25 +74,40 @@ public class CCBNExperiment {
     private static String baseOutputPath = "";
 
     /**
-     * Runs a federated learning experiment using class-conditional Bayesian networks.
+     * Runs a federated learning experiment using class-conditional Bayesian
+     * networks.
      * <p>
-     * This method performs multi-fold, multi-client training and fusion over a given dataset,
-     * applying a specified discretization strategy, algorithm configurations, and output labeling.
+     * This method performs multi-fold, multi-client training and fusion over a
+     * given dataset,
+     * applying a specified discretization strategy, algorithm configurations, and
+     * output labeling.
      * </p>
      *
-     * @param folder The path to the folder containing the dataset files.
-     * @param datasetName The name of the dataset (used to locate and label results).
-     * @param discretizerOptions The options used to configure the discretization algorithm.
-     * @param algorithmOptions The options for configuring the local learning algorithm.
-     * @param clientOptions The options applied specifically at the client level.
-     * @param serverOptions The options applied specifically at the server (fusion) level.
-     * @param nClients The number of clients (partitions) used in the federated setting.
-     * @param nIterations The number of training iterations (e.g., communication rounds).
-     * @param nFolds The number of cross-validation folds to use in the experiment.
-     * @param seed The random seed for reproducibility of data splits.
-     * @param suffix The suffix used to distinguish the output file or experiment version.
+     * @param folder             The path to the folder containing the dataset
+     *                           files.
+     * @param datasetName        The name of the dataset (used to locate and label
+     *                           results).
+     * @param discretizerOptions The options used to configure the discretization
+     *                           algorithm.
+     * @param algorithmOptions   The options for configuring the local learning
+     *                           algorithm.
+     * @param clientOptions      The options applied specifically at the client
+     *                           level.
+     * @param serverOptions      The options applied specifically at the server
+     *                           (fusion) level.
+     * @param nClients           The number of clients (partitions) used in the
+     *                           federated setting.
+     * @param nIterations        The number of training iterations (e.g.,
+     *                           communication rounds).
+     * @param nFolds             The number of cross-validation folds to use in the
+     *                           experiment.
+     * @param seed               The random seed for reproducibility of data splits.
+     * @param suffix             The suffix used to distinguish the output file or
+     *                           experiment version.
      */
-    public static void run(String folder, String datasetName, String[] discretizerOptions, String[] algorithmOptions, String[] clientOptions, String[] serverOptions, String[] dpOptions, int nClients, int nIterations, int nFolds, int seed, double alpha, String suffix, String nodeName) {
+    public static void run(String folder, String datasetName, String[] discretizerOptions, String[] algorithmOptions,
+            String[] clientOptions, String[] serverOptions, String[] dpOptions, int nClients, int nIterations,
+            int nFolds, int seed, double alpha, String suffix, String nodeName) {
         // Get the cross-validation splits for each client
         String datasetPath = baseDatasetPath + folder + "/" + datasetName + ".arff";
         Instances[][][] splits = Weka_Instances.divide(datasetName, datasetPath, nFolds, nClients, seed, alpha);
@@ -119,19 +134,22 @@ public class CCBNExperiment {
         convergence = new NoneConvergence();
         outputPath = "";
 
-        models = validate(datasetName, splits, seed, models, null, discretizerName, discretizerOptions, clientOptions, discretizerName, discretizerOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence, 1, outputPath, alpha, nodeName);
+        models = validate(datasetName, splits, seed, models, null, discretizerName, discretizerOptions, clientOptions,
+                discretizerName, discretizerOptions, dpOptions, buildStats, fusionStats, stats, fusionClient,
+                fusionServer, convergence, 1, outputPath, alpha, nodeName);
 
         // STEP 2 — Federate AnDE synthetic classes
         buildStats = false;
         fusionStats = false;
         stats = false;
         fusionClient = new FusionPosition(-1);
-        fusionServer = new Classes_Fusion();  // new federation logic
+        fusionServer = new Classes_Fusion(); // new federation logic
         convergence = new NoneConvergence();
         outputPath = "";
 
-        modelsAnDE = validate(datasetName, splits, seed, modelsAnDE, null, discretizerName, discretizerOptions, clientOptions, "Classes_AnDE", algorithmOptions,  dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence,1, outputPath, alpha, nodeName);
-
+        modelsAnDE = validate(datasetName, splits, seed, modelsAnDE, null, discretizerName, discretizerOptions,
+                clientOptions, "Classes_AnDE", algorithmOptions, dpOptions, buildStats, fusionStats, stats,
+                fusionClient, fusionServer, convergence, 1, outputPath, alpha, nodeName);
 
         // STEP 3 — Real training and fusion of the algorithms
         buildStats = true;
@@ -143,13 +161,17 @@ public class CCBNExperiment {
         convergence = new NoneConvergence();
         outputPath = baseOutputPath + algorithmName + "_" + suffix;
 
-        validate(datasetName, splits, seed, models, modelsAnDE, discretizerName, discretizerOptions, clientOptions, algorithmName, algorithmOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer, convergence, nIterations, outputPath, alpha, nodeName);
+        validate(datasetName, splits, seed, models, modelsAnDE, discretizerName, discretizerOptions, clientOptions,
+                algorithmName, algorithmOptions, dpOptions, buildStats, fusionStats, stats, fusionClient, fusionServer,
+                convergence, nIterations, outputPath, alpha, nodeName);
     }
 
     /**
      * Returns the name of the discretization method based on the provided options.
      *
-     * @param options The discretization options passed to the method. If the array is empty, it indicates that supervised discretization is being used.
+     * @param options The discretization options passed to the method. If the array
+     *                is empty, it indicates that supervised discretization is being
+     *                used.
      * @return The name of the discretization method.
      */
     private static String getDiscretizerName(String[] options) {
@@ -159,7 +181,8 @@ public class CCBNExperiment {
     /**
      * Returns the name of the algorithm based on the provided options.
      *
-     * @param options The options passed to the method, typically containing algorithm-related flags.
+     * @param options The options passed to the method, typically containing
+     *                algorithm-related flags.
      * @return The name of the algorithm as a string.
      */
     private static String getAlgorithmName(String[] options) {
@@ -180,11 +203,12 @@ public class CCBNExperiment {
     }
 
     /**
-     * Returns the local algorithm instance based on the algorithm name and configuration.
+     * Returns the local algorithm instance based on the algorithm name and
+     * configuration.
      *
-     * @param name The name of the algorithm.
+     * @param name    The name of the algorithm.
      * @param options The options used to configure the algorithm.
-     * @param model A model object passed if required by the algorithm.
+     * @param model   A model object passed if required by the algorithm.
      * @return An instance of the selected local learning algorithm.
      */
     private static LocalAlgorithm getAlgorithm(String name, String[] options, Object model, Object modelAnDE) {
@@ -216,7 +240,8 @@ public class CCBNExperiment {
                     if (structure.startsWith("A") && structure.endsWith("DE")) {
                         nAnDE = Integer.parseInt(structure.substring(1, structure.length() - 2));
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
 
                 Classes structure = (Classes) modelAnDE;
                 return new PT_AnDE(cutPoints, nAnDE, structure.getSyntheticClassMaps());
@@ -239,15 +264,19 @@ public class CCBNExperiment {
     }
 
     /**
-     * Returns the fusion strategy used at the client side based on the algorithm name and provided options.
+     * Returns the fusion strategy used at the client side based on the algorithm
+     * name and provided options.
      *
      * @param algorithmName The name of the learning algorithm.
-     * @param options The command-line-style flags passed to configure fusion behavior.
-     * @return An instance of the corresponding {@link Fusion} strategy for the client.
+     * @param options       The command-line-style flags passed to configure fusion
+     *                      behavior.
+     * @return An instance of the corresponding {@link Fusion} strategy for the
+     *         client.
      */
     private static Fusion getClientFusion(String algorithmName, String[] options) {
         switch (algorithmName) {
-            // Case for Weka's Naive Bayes implementation (always maintain the model obtained from the server)
+            // Case for Weka's Naive Bayes implementation (always maintain the model
+            // obtained from the server)
             case "PT_NB" -> {
                 return new FusionPosition(-1);
             }
@@ -276,11 +305,15 @@ public class CCBNExperiment {
     }
 
     /**
-     * Returns the fusion strategy used at the server side based on the algorithm name and provided options.
+     * Returns the fusion strategy used at the server side based on the algorithm
+     * name and provided options.
      *
-     * @param algorithmName The name of the learning algorithm (e.g., "Weka", "dCCBN").
-     * @param options The command-line-style flags passed to configure fusion behavior.
-     * @return An instance of the corresponding {@link Fusion} strategy for the server.
+     * @param algorithmName The name of the learning algorithm (e.g., "Weka",
+     *                      "dCCBN").
+     * @param options       The command-line-style flags passed to configure fusion
+     *                      behavior.
+     * @return An instance of the corresponding {@link Fusion} strategy for the
+     *         server.
      */
     private static Fusion getServerFusion(String algorithmName, String[] options) {
         switch (algorithmName) {
@@ -313,19 +346,24 @@ public class CCBNExperiment {
     }
 
     /**
-     * Constructs a CSV-like string that represents the current operation configuration.
+     * Constructs a CSV-like string that represents the current operation
+     * configuration.
      *
-     * @param fold The current fold index of cross-validation.
+     * @param fold               The current fold index of cross-validation.
      * @param discretizerOptions The options passed to the discretizer.
-     * @param algorithmName The resolved internal name of the algorithm.
-     * @param algorithmOptions The options passed to the learning algorithm.
-     * @param seed The random seed for reproducibility.
-     * @param nClients The number of clients participating in federated learning.
-     * @param alpha The alpha parameter for non-IID data distribution.
-     * @param nodeName The name of the node executing the experiment.
-     * @return A string encoding the current configuration for logging or output files.
+     * @param algorithmName      The resolved internal name of the algorithm.
+     * @param algorithmOptions   The options passed to the learning algorithm.
+     * @param seed               The random seed for reproducibility.
+     * @param nClients           The number of clients participating in federated
+     *                           learning.
+     * @param alpha              The alpha parameter for non-IID data distribution.
+     * @param nodeName           The name of the node executing the experiment.
+     * @return A string encoding the current configuration for logging or output
+     *         files.
      */
-    private static String getOperation(int fold, String[] discretizerOptions, String algorithmName, String[] algorithmOptions, String[] clientOptions, String[] dpOptions, int seed, int nClients, double alpha, String nodeName) {
+    private static String getOperation(int fold, String[] discretizerOptions, String algorithmName,
+            String[] algorithmOptions, String[] clientOptions, String[] dpOptions, int seed, int nClients, double alpha,
+            String nodeName) {
         // Default values if options were not found
         String structure = null;
         String parameterLearning = null;
@@ -381,12 +419,16 @@ public class CCBNExperiment {
             }
             case "PT_NB" -> {
                 String combinedName = structure + "-" + parameterLearning;
-                return fold + "," + combinedName + "," + nodeName + "," + nBins + "," + seed + "," + nClients + ",false,false" + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity + "," + autoSensitivity + "," + alpha;
+                return fold + "," + combinedName + "," + nodeName + "," + nBins + "," + seed + "," + nClients
+                        + ",false,false" + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity
+                        + "," + autoSensitivity + "," + alpha;
             }
             case "WDPT_CCBN" -> {
                 // Construct a composite name
                 String combinedName = structure + "-" + parameterLearning;
-                return fold + "," + combinedName + "," + nodeName + "," + nBins + "," + seed + "," + nClients + "," + fuseParameters + "," + fuseProbabilities + "," + dpType + "," + epsilon + "," + delta + "," + rho + "," + sensitivity + "," + autoSensitivity + "," + alpha;
+                return fold + "," + combinedName + "," + nodeName + "," + nBins + "," + seed + "," + nClients + ","
+                        + fuseParameters + "," + fuseProbabilities + "," + dpType + "," + epsilon + "," + delta + ","
+                        + rho + "," + sensitivity + "," + autoSensitivity + "," + alpha;
             }
             // Add more algorithms here
             default -> {
@@ -398,23 +440,27 @@ public class CCBNExperiment {
     /**
      * Validate the algorithm for the experiment.
      *
-     * @param datasetName The name of the dataset.
-     * @param splits The data splits.
-     * @param models The previous models in case they are required.
-     * @param modelsAnDE The AnDE class cuts in case they are required.
-     * @param algorithmName The name of the algorithm.
+     * @param datasetName      The name of the dataset.
+     * @param splits           The data splits.
+     * @param models           The previous models in case they are required.
+     * @param modelsAnDE       The AnDE class cuts in case they are required.
+     * @param algorithmName    The name of the algorithm.
      * @param algorithmOptions The options for the algorithm.
-     * @param buildStats Whether to build statistics.
-     * @param fusionStats Whether to build fusion statistics.
-     * @param stats Whether to build statistics.
-     * @param fusionClient The client fusion method.
-     * @param fusionServer The server fusion method.
-     * @param convergence The convergence method.
-     * @param nIterations The number of iterations.
-     * @param outputPath The output path.
+     * @param buildStats       Whether to build statistics.
+     * @param fusionStats      Whether to build fusion statistics.
+     * @param stats            Whether to build statistics.
+     * @param fusionClient     The client fusion method.
+     * @param fusionServer     The server fusion method.
+     * @param convergence      The convergence method.
+     * @param nIterations      The number of iterations.
+     * @param outputPath       The output path.
      * @return The models.
      */
-    protected static Object[] validate(String datasetName, Instances[][][] splits, int seed, Object[] models, Object[] modelsAnDE, String discretizerName, String[] discretizerOptions, String[] clientOptions, String algorithmName, String[] algorithmOptions, String[] dpOptions, boolean buildStats, boolean fusionStats, boolean stats, Fusion fusionClient, Fusion fusionServer, Convergence convergence, int nIterations, String outputPath, double alpha, String nodeName) {
+    protected static Object[] validate(String datasetName, Instances[][][] splits, int seed, Object[] models,
+            Object[] modelsAnDE, String discretizerName, String[] discretizerOptions, String[] clientOptions,
+            String algorithmName, String[] algorithmOptions, String[] dpOptions, boolean buildStats,
+            boolean fusionStats, boolean stats, Fusion fusionClient, Fusion fusionServer, Convergence convergence,
+            int nIterations, String outputPath, double alpha, String nodeName) {
         // The first level of the splits corresponds to the folds
         int nFolds = splits.length;
 
@@ -435,7 +481,7 @@ public class CCBNExperiment {
             String[] clientOptionsTemp = Arrays.copyOf(clientOptions, clientOptions.length);
             String[] dpOptionsTemp = Arrays.copyOf(dpOptions, dpOptions.length);
 
-            // Get the partitions for the clients in the current fold 
+            // Get the partitions for the clients in the current fold
             Instances[][] partitions = splits[i];
             int nClients = partitions.length;
 
@@ -444,11 +490,14 @@ public class CCBNExperiment {
             if (modelsAnDE != null) {
                 modelAnDE = modelsAnDE[i];
             }
-            String operation = getOperation(i, discretizerOptionsTemp, algorithmName, algorithmOptionsTemp, clientOptionsTemp, dpOptionsTemp, seed, nClients, alpha, nodeName);
+            String operation = getOperation(i, discretizerOptionsTemp, algorithmName, algorithmOptionsTemp,
+                    clientOptionsTemp, dpOptionsTemp, seed, nClients, alpha, nodeName);
 
             System.out.println(">>> RUNNING: Dataset " + datasetName + " | Fold " + i);
 
-            models[i] = run(datasetName, partitions, algorithmName, algorithmOptionsTemp, dpOptionsTemp, model, modelAnDE, buildStats, fusionStats, fusionClient, stats, fusionServer, convergence, nIterations, operation, outputPath);
+            models[i] = run(datasetName, partitions, algorithmName, algorithmOptionsTemp, dpOptionsTemp, model,
+                    modelAnDE, buildStats, fusionStats, fusionClient, stats, fusionServer, convergence, nIterations,
+                    operation, outputPath);
         }
 
         return models;
@@ -461,21 +510,26 @@ public class CCBNExperiment {
     }
 
     /**
-     * Creates a {@link NumericNoiseGenerator} based on Weka-style differential privacy options.
+     * Creates a {@link NumericNoiseGenerator} based on Weka-style differential
+     * privacy options.
      * <p>
      * Accepted formats:
      * <ul>
-     *   <li><b>Laplace:</b> {"-DP", "Laplace", "-E", "epsilon", "-S", "sensitivity"}</li>
-     *   <li><b>Gaussian:</b> {"-DP", "Gaussian", "-E", "epsilon", "-D", "delta", "-S", "sensitivity"}</li>
-     *   <li><b>ZCDP:</b> {"-DP", "ZCDP", "-R", "rho", "-S", "sensitivity"}</li>
+     * <li><b>Laplace:</b> {"-DP", "Laplace", "-E", "epsilon", "-S",
+     * "sensitivity"}</li>
+     * <li><b>Gaussian:</b> {"-DP", "Gaussian", "-E", "epsilon", "-D", "delta",
+     * "-S", "sensitivity"}</li>
+     * <li><b>ZCDP:</b> {"-DP", "ZCDP", "-R", "rho", "-S", "sensitivity"}</li>
      * </ul>
      * If the input is empty or invalid, the method returns {@code null}.
      *
      * @param dpOptions array of command-line style options
-     * @return a configured {@link NumericNoiseGenerator} instance or {@code null} if disabled or invalid
+     * @return a configured {@link NumericNoiseGenerator} instance or {@code null}
+     *         if disabled or invalid
      */
     private static NumericNoiseGenerator getNoiseGenerator(String[] dpOptions) {
-        if (dpOptions == null || dpOptions.length == 0) return null;
+        if (dpOptions == null || dpOptions.length == 0)
+            return null;
 
         // Copy the options to avoid modifying the original array
         dpOptions = Arrays.copyOf(dpOptions, dpOptions.length);
@@ -513,24 +567,27 @@ public class CCBNExperiment {
     /**
      * Run the algorithm for the experiment.
      *
-     * @param datasetName The name of the dataset.
-     * @param partitions The data partitions.
-     * @param algorithmName The name of the algorithm.
+     * @param datasetName      The name of the dataset.
+     * @param partitions       The data partitions.
+     * @param algorithmName    The name of the algorithm.
      * @param algorithmOptions The options for the algorithm.
-     * @param model The previous model in case it is required.
-     * @param modelAnDE The AnDE class cuts in case it is required.
-     * @param buildStats Whether to build statistics.
-     * @param fusionStats Whether to build fusion statistics.
-     * @param fusionClient The client fusion method.
-     * @param stats Whether to build statistics.
-     * @param fusionServer The server fusion method.
-     * @param convergence The convergence method.
-     * @param nIterations The number of iterations.
-     * @param operation The operation.
-     * @param outputPath The output path.
+     * @param model            The previous model in case it is required.
+     * @param modelAnDE        The AnDE class cuts in case it is required.
+     * @param buildStats       Whether to build statistics.
+     * @param fusionStats      Whether to build fusion statistics.
+     * @param fusionClient     The client fusion method.
+     * @param stats            Whether to build statistics.
+     * @param fusionServer     The server fusion method.
+     * @param convergence      The convergence method.
+     * @param nIterations      The number of iterations.
+     * @param operation        The operation.
+     * @param outputPath       The output path.
      * @return The model.
      */
-    private static Object run(String datasetName, Instances[][] partitions, String algorithmName, String[] algorithmOptions, String[] dpOptions, Object model, Object modelAnDE, boolean buildStats, boolean fusionStats, Fusion fusionClient, boolean stats, Fusion fusionServer, Convergence convergence, int nIterations, String operation, String outputPath) {
+    private static Object run(String datasetName, Instances[][] partitions, String algorithmName,
+            String[] algorithmOptions, String[] dpOptions, Object model, Object modelAnDE, boolean buildStats,
+            boolean fusionStats, Fusion fusionClient, boolean stats, Fusion fusionServer, Convergence convergence,
+            int nIterations, String operation, String outputPath) {
         int nClients = partitions.length;
         ArrayList<Client> clients = new ArrayList<>(nClients);
 
@@ -548,7 +605,9 @@ public class CCBNExperiment {
                 if (Utils.getFlag("AUTO", dpOptions)) {
                     dp.setSensitivity(computeSensitivity(data, algorithmOptions));
                 }
-            } catch (Exception e) {throw new RuntimeException(e);}
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
             Client client = new Client(fusionClient, algorithm, data, dp);
             client.setStats(buildStats, fusionStats, outputPath);
@@ -568,19 +627,23 @@ public class CCBNExperiment {
     }
 
     /**
-     * Entry point for running a federated learning experiment using class-conditional Bayesian networks.
+     * Entry point for running a federated learning experiment using
+     * class-conditional Bayesian networks.
      * <p>
-     * This method sets up the configuration for discretization, learning structure, parameter estimation,
-     * number of clients, fusion method, and folds for cross-validation. It then launches the experiment
+     * This method sets up the configuration for discretization, learning structure,
+     * parameter estimation,
+     * number of clients, fusion method, and folds for cross-validation. It then
+     * launches the experiment
      * using {@link #run}.
      * </p>
+     * 
      * @param args Command-line arguments (not used in this setup).
      */
     public static void main(String[] args) {
         // Default dataset and experimental configuration
         String nodeName = "localhost";
 
-        String folder = "Discretas";
+        String folder = "Discrete";
         String datasetName = "Car_Evaluation";
         int nClients = 20;
         int seed = 42;
@@ -588,8 +651,8 @@ public class CCBNExperiment {
         int nIterations = 1;
 
         // Structure and parameter learning configurations
-        String structure = "NB";  // Possible values: "NB", "A1DE", "A2DE", ..., "AnDE"
-        String parameterLearning = "wCCBN";  // Possible values: "dCCBN", "wCCBN", "eCCBN", and "Weka"
+        String structure = "NB"; // Possible values: "NB", "A1DE", "A2DE", ..., "AnDE"
+        String parameterLearning = "wCCBN"; // Possible values: "dCCBN", "wCCBN", "eCCBN", and "Weka"
         String maxIterations = "1";
 
         // Fusion behaviour
@@ -601,19 +664,20 @@ public class CCBNExperiment {
         double alpha = 0; // IID if <=0
 
         // Differential privacy parameters
-        String dpType = "Laplace";  // "Laplace", "Gaussian", "ZCDP", "None"
-        double epsilon = 1000000;      // for Laplace and Gaussian
-        double delta = 1e-5;     // only for Gaussian
-        double rho = 0.1;        // only for ZCDP
-        double sensitivity = 1.0;  // default for PT; smaller for WDPT
-        boolean autoSensitivity  = true; // Calculate sensitivity automatically based on the data columns
+        String dpType = "Laplace"; // "Laplace", "Gaussian", "ZCDP", "None"
+        double epsilon = 1000000; // for Laplace and Gaussian
+        double delta = 1e-5; // only for Gaussian
+        double rho = 0.1; // only for ZCDP
+        double sensitivity = 1.0; // default for PT; smaller for WDPT
+        boolean autoSensitivity = true; // Calculate sensitivity automatically based on the data columns
 
         // Check if arguments are provided
-        // If arguments are provided, read the parameters from the file and override the default values
+        // If arguments are provided, read the parameters from the file and override the
+        // default values
         if (args.length > 0) {
             int index = Integer.parseInt(args[0]);
             String paramsFileName = args[1];
-            //int threads = Integer.parseInt(args[2]);
+            // int threads = Integer.parseInt(args[2]);
             nodeName = args[2];
 
             // Read the parameters from args
@@ -624,11 +688,12 @@ public class CCBNExperiment {
                     br.readLine();
                 line = br.readLine();
                 parameters = line.split(" ");
+            } catch (Exception e) {
+                System.out.println(e);
             }
-            catch(Exception e){ System.out.println(e); }
 
             System.out.println("Number of hyperparams: " + parameters.length);
-            int i=0;
+            int i = 0;
             for (String string : parameters) {
                 System.out.println("Param[" + i + "]: " + string);
                 i++;
@@ -679,16 +744,19 @@ public class CCBNExperiment {
             }
         }
 
-        // Use supervised discretization in case the number of bins is not provided and equal-frequency otherwise
-        String[] discretizerOptions = nBins == -1 ? new String[] {} : new String[] {"-F", "-B", "" + nBins};
+        // Use supervised discretization in case the number of bins is not provided and
+        // equal-frequency otherwise
+        String[] discretizerOptions = nBins == -1 ? new String[] {} : new String[] { "-F", "-B", "" + nBins };
 
         // Options for local learning algorithm
-        String[] algorithmOptions = new String[] {"-S", structure, "-P", parameterLearning, "-I", maxIterations};
+        String[] algorithmOptions = new String[] { "-S", structure, "-P", parameterLearning, "-I", maxIterations };
 
         // Build shared fusion flags based on configuration
         List<String> flags = new ArrayList<>();
-        if (fuseParameters) flags.add("-FP"); // Fuse parameter vectors
-        if (fuseProbabilities) flags.add("-FPR"); // Fuse class-conditional probabilities
+        if (fuseParameters)
+            flags.add("-FP"); // Fuse parameter vectors
+        if (fuseProbabilities)
+            flags.add("-FPR"); // Fuse class-conditional probabilities
 
         // Convert flags to arrays for client and server options
         String[] type = new String[0];
@@ -699,53 +767,64 @@ public class CCBNExperiment {
         List<String> dpList = new ArrayList<>();
         switch (dpType.toLowerCase()) {
             case "laplace" -> dpList.addAll(List.of("-DP", "Laplace", "-E", "" + epsilon, "-S", "" + sensitivity));
-            case "gaussian" -> dpList.addAll(List.of("-DP", "Gaussian", "-E", "" + epsilon, "-D", "" + delta, "-S", "" + sensitivity));
+            case "gaussian" ->
+                dpList.addAll(List.of("-DP", "Gaussian", "-E", "" + epsilon, "-D", "" + delta, "-S", "" + sensitivity));
             case "zcdp" -> dpList.addAll(List.of("-DP", "ZCDP", "-R", "" + rho, "-S", "" + sensitivity));
         }
-        if (autoSensitivity) dpList.add("-AUTO");
+        if (autoSensitivity)
+            dpList.add("-AUTO");
         String[] dpOptions = dpList.toArray(new String[0]);
 
         // Create output suffix for result identification
-        String suffix = datasetName + "_" + nBins + "_" + structure + "_" + parameterLearning + "_" + maxIterations + "_" + fuseParameters + "_" + fuseProbabilities
+        String suffix = datasetName + "_" + nBins + "_" + structure + "_" + parameterLearning + "_" + maxIterations
+                + "_" + fuseParameters + "_" + fuseProbabilities
                 + "_" + dpType + "_" + epsilon + "_" + delta + "_" + rho + "_" + sensitivity + "_" + autoSensitivity
                 + "_" + nClients + "_" + seed + "_" + nIterations + "_" + nFolds + "_a" + alpha + ".csv";
 
         // Run the experiment
-        CCBNExperiment.run(folder, datasetName, discretizerOptions, algorithmOptions, clientOptions, serverOptions, dpOptions, nClients, nIterations, nFolds, seed, alpha, suffix, nodeName);
+        CCBNExperiment.run(folder, datasetName, discretizerOptions, algorithmOptions, clientOptions, serverOptions,
+                dpOptions, nClients, nIterations, nFolds, seed, alpha, suffix, nodeName);
     }
 
     /**
-     * Scans for any result file that matches the experiment configuration AND the specific Alpha.
+     * Scans for any result file that matches the experiment configuration AND the
+     * specific Alpha.
      * Returns TRUE if and only if a file exists that:
      * 1. Has equal or more iterations than required.
-     * 2. Contains the specific 'foldToCheck' fully completed (reached target iterations).
+     * 2. Contains the specific 'foldToCheck' fully completed (reached target
+     * iterations).
      * 3. Exists and is valid in BOTH 'Build' and 'Fusion' directories.
      * 4. Matches the target alpha value.
      */
     /**
-     * Scans for any result file that matches the experiment configuration AND an equivalent Alpha.
-     * Updated to handle IID equivalence (e.g., finding ..._a-1.csv when target is ..._a-10.csv).
+     * Scans for any result file that matches the experiment configuration AND an
+     * equivalent Alpha.
+     * Updated to handle IID equivalence (e.g., finding ..._a-1.csv when target is
+     * ..._a-10.csv).
      */
-    private static boolean isFoldCompleteInSuperset(String targetFilename, int foldToCheck, int targetIterations, double targetAlpha) {
-        String[] subDirs = {"results/Client/Build/", "results/Client/Fusion/"};
+    private static boolean isFoldCompleteInSuperset(String targetFilename, int foldToCheck, int targetIterations,
+            double targetAlpha) {
+        String[] subDirs = { "results/Client/Build/", "results/Client/Fusion/" };
 
-        if (!targetFilename.endsWith(".csv")) return false;
+        if (!targetFilename.endsWith(".csv"))
+            return false;
 
         // Expected format: ..._Seed_Iterations_Folds_aAlpha.csv
         String rawName = targetFilename.substring(0, targetFilename.length() - 4);
         String[] parts = rawName.split("_");
 
-        if (parts.length < 4) return false;
+        if (parts.length < 4)
+            return false;
 
         // Relative positions from the end:
-        // len-1: aAlpha  (e.g., "a-10.0")
-        // len-2: Folds   (e.g., "5")
-        // len-3: Iters   (e.g., "50")
-        // len-4: Seed    (The last element of the fixed prefix)
+        // len-1: aAlpha (e.g., "a-10.0")
+        // len-2: Folds (e.g., "5")
+        // len-3: Iters (e.g., "50")
+        // len-4: Seed (The last element of the fixed prefix)
 
         // 1. Construct the immutable prefix (Everything up to and including the Seed)
         StringBuilder prefixBuilder = new StringBuilder();
-        for(int i=0; i <= parts.length - 4; i++) {
+        for (int i = 0; i <= parts.length - 4; i++) {
             prefixBuilder.append(parts[i]).append("_");
         }
         String searchPrefix = prefixBuilder.toString(); // e.g., "Flare_..._42_"
@@ -755,16 +834,17 @@ public class CCBNExperiment {
         String foldPart = "_" + parts[parts.length - 2] + "_a";
 
         java.io.File buildDir = new java.io.File(subDirs[0]);
-        if (!buildDir.exists()) return false;
+        if (!buildDir.exists())
+            return false;
 
-        // 3. Search for candidates matching Prefix and Folds (ignoring Iterations and exact Alpha value for now)
-        java.io.File[] candidates = buildDir.listFiles((d, name) ->
-                name.startsWith(searchPrefix) &&
-                        name.contains(foldPart) &&
-                        name.endsWith(".csv")
-        );
+        // 3. Search for candidates matching Prefix and Folds (ignoring Iterations and
+        // exact Alpha value for now)
+        java.io.File[] candidates = buildDir.listFiles((d, name) -> name.startsWith(searchPrefix) &&
+                name.contains(foldPart) &&
+                name.endsWith(".csv"));
 
-        if (candidates == null) return false;
+        if (candidates == null)
+            return false;
 
         for (java.io.File candidate : candidates) {
             try {
@@ -799,14 +879,18 @@ public class CCBNExperiment {
                 int fileConfigIters = Integer.parseInt(candParts[candParts.length - 3]);
 
                 // Check if the found file has enough iterations
-                if (fileConfigIters < targetIterations) continue;
+                if (fileConfigIters < targetIterations)
+                    continue;
 
                 // Deep validation of content
-                boolean validInBuild = isFileValidForFold(subDirs[0] + name, foldToCheck, targetIterations, targetAlpha);
-                boolean validInFusion = isFileValidForFold(subDirs[1] + name, foldToCheck, targetIterations, targetAlpha);
+                boolean validInBuild = isFileValidForFold(subDirs[0] + name, foldToCheck, targetIterations,
+                        targetAlpha);
+                boolean validInFusion = isFileValidForFold(subDirs[1] + name, foldToCheck, targetIterations,
+                        targetAlpha);
 
                 if (validInBuild && validInFusion) {
-                    System.out.println(">>> SKIP: Fold " + foldToCheck + " complete in equivalent file " + name + " (Alpha " + fileAlpha + " ~ " + targetAlpha + ")");
+                    System.out.println(">>> SKIP: Fold " + foldToCheck + " complete in equivalent file " + name
+                            + " (Alpha " + fileAlpha + " ~ " + targetAlpha + ")");
                     return true;
                 }
 
@@ -818,16 +902,20 @@ public class CCBNExperiment {
     }
 
     /**
-     * Checks if a specific CSV file contains the fold, reached the target iterations,
-     * AND ensures the data belongs to the correct alpha value (treating <=0 as equivalent IID).
+     * Checks if a specific CSV file contains the fold, reached the target
+     * iterations,
+     * AND ensures the data belongs to the correct alpha value (treating <=0 as
+     * equivalent IID).
      */
     private static boolean isFileValidForFold(String path, int foldToCheck, int targetIterations, double targetAlpha) {
         java.io.File file = new java.io.File(path);
-        if (!file.exists()) return false;
+        if (!file.exists())
+            return false;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line = br.readLine(); // Header
-            if (line == null) return false;
+            if (line == null)
+                return false;
 
             String[] headers = line.split(",");
             int cvIndex = -1;
@@ -836,19 +924,25 @@ public class CCBNExperiment {
 
             for (int i = 0; i < headers.length; i++) {
                 String h = headers[i].trim();
-                if (h.equalsIgnoreCase("cv")) cvIndex = i;
-                else if (h.equalsIgnoreCase("iteration")) iterIndex = i;
-                else if (h.equalsIgnoreCase("alpha")) alphaIndex = i;
+                if (h.equalsIgnoreCase("cv"))
+                    cvIndex = i;
+                else if (h.equalsIgnoreCase("iteration"))
+                    iterIndex = i;
+                else if (h.equalsIgnoreCase("alpha"))
+                    alphaIndex = i;
             }
 
-            if (cvIndex == -1 || iterIndex == -1) return false;
+            if (cvIndex == -1 || iterIndex == -1)
+                return false;
 
             int maxIterFound = -1;
 
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
+                if (line.trim().isEmpty())
+                    continue;
                 String[] values = line.split(",");
-                if (values.length <= Math.max(Math.max(cvIndex, iterIndex), alphaIndex)) continue;
+                if (values.length <= Math.max(Math.max(cvIndex, iterIndex), alphaIndex))
+                    continue;
 
                 try {
                     // 1. Check Alpha Logic
@@ -866,10 +960,12 @@ public class CCBNExperiment {
                             continue;
                         } else {
                             // Both are Non-IID (positive). Check exact value.
-                            if (Math.abs(rowAlpha - targetAlpha) > 0.0001) continue;
+                            if (Math.abs(rowAlpha - targetAlpha) > 0.0001)
+                                continue;
                         }
                     } else if (targetAlpha > 0.0001) {
-                        // If we want Non-IID but the file has no alpha column (old IID file), it's invalid.
+                        // If we want Non-IID but the file has no alpha column (old IID file), it's
+                        // invalid.
                         return false;
                     }
 
@@ -878,9 +974,11 @@ public class CCBNExperiment {
                     if (currentCV == foldToCheck) {
                         // 3. Check Iteration
                         int currentIter = Integer.parseInt(values[iterIndex].trim());
-                        if (currentIter > maxIterFound) maxIterFound = currentIter;
+                        if (currentIter > maxIterFound)
+                            maxIterFound = currentIter;
                     }
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
 
             return maxIterFound >= targetIterations;
@@ -891,30 +989,36 @@ public class CCBNExperiment {
     }
 
     /**
-     * Ensures strict consistency. If the superset check failed, we assume the data currently
+     * Ensures strict consistency. If the superset check failed, we assume the data
+     * currently
      * in the files is either incomplete (e.g. iter 3 of 5) or inconsistent.
      * <p>
-     * Action: It WIPES all rows belonging to 'foldToCheck' AND 'targetAlpha' from both Build and Fusion files.
+     * Action: It WIPES all rows belonging to 'foldToCheck' AND 'targetAlpha' from
+     * both Build and Fusion files.
      * This forces a clean restart for that specific fold configuration.
      * </p>
      */
-    private static void cleanCorruptOrPartialFold(String targetFilename, int foldToCheck, int targetIterations, double targetAlpha) {
-        String[] subDirs = {"results/Client/Build/", "results/Client/Fusion/"};
+    private static void cleanCorruptOrPartialFold(String targetFilename, int foldToCheck, int targetIterations,
+            double targetAlpha) {
+        String[] subDirs = { "results/Client/Build/", "results/Client/Fusion/" };
 
         for (String dir : subDirs) {
             String fullPath = dir + targetFilename;
             java.io.File file = new java.io.File(fullPath);
 
-            if (!file.exists()) continue;
+            if (!file.exists())
+                continue;
 
             try {
                 List<String> lines = new ArrayList<>();
                 try (BufferedReader br = new BufferedReader(new FileReader(file))) {
                     String line;
-                    while ((line = br.readLine()) != null) lines.add(line);
+                    while ((line = br.readLine()) != null)
+                        lines.add(line);
                 }
 
-                if (lines.isEmpty()) continue;
+                if (lines.isEmpty())
+                    continue;
 
                 String header = lines.get(0);
                 String[] headers = header.split(",");
@@ -922,11 +1026,14 @@ public class CCBNExperiment {
                 int alphaIndex = -1;
 
                 for (int i = 0; i < headers.length; i++) {
-                    if (headers[i].trim().equalsIgnoreCase("cv")) cvIndex = i;
-                    if (headers[i].trim().equalsIgnoreCase("alpha")) alphaIndex = i;
+                    if (headers[i].trim().equalsIgnoreCase("cv"))
+                        cvIndex = i;
+                    if (headers[i].trim().equalsIgnoreCase("alpha"))
+                        alphaIndex = i;
                 }
 
-                if (cvIndex == -1) continue;
+                if (cvIndex == -1)
+                    continue;
 
                 List<String> cleanLines = new ArrayList<>();
                 cleanLines.add(header);
@@ -934,7 +1041,8 @@ public class CCBNExperiment {
 
                 for (int i = 1; i < lines.size(); i++) {
                     String line = lines.get(i);
-                    if (line.trim().isEmpty()) continue;
+                    if (line.trim().isEmpty())
+                        continue;
 
                     try {
                         String[] values = line.split(",");
@@ -954,7 +1062,8 @@ public class CCBNExperiment {
                                 sameAlpha = false; // Different types
                             } else {
                                 // Both positive, check value
-                                if (Math.abs(rowAlpha - targetAlpha) > 0.0001) sameAlpha = false;
+                                if (Math.abs(rowAlpha - targetAlpha) > 0.0001)
+                                    sameAlpha = false;
                             }
                         }
 
@@ -970,9 +1079,11 @@ public class CCBNExperiment {
                 }
 
                 if (dirtyFound) {
-                    System.out.println(">>> CLEANING: Wiping incomplete data for Fold " + foldToCheck + " (Alpha eq. " + targetAlpha + ") in " + fullPath);
+                    System.out.println(">>> CLEANING: Wiping incomplete data for Fold " + foldToCheck + " (Alpha eq. "
+                            + targetAlpha + ") in " + fullPath);
                     try (java.io.PrintWriter pw = new java.io.PrintWriter(new java.io.FileWriter(file))) {
-                        for (String l : cleanLines) pw.println(l);
+                        for (String l : cleanLines)
+                            pw.println(l);
                     }
                 }
 

@@ -31,17 +31,8 @@
 
 package fedAnDE.experiments.utils;
 
-import fedAnDE.data.BN_DataSet;
 import fedAnDE.data.Data;
-import edu.cmu.tetrad.bayes.BayesPm;
-import edu.cmu.tetrad.graph.*;
-import edu.cmu.tetrad.search.score.BdeuScore;
-import edu.cmu.tetrad.search.Fges;
-import org.albacete.simd.threads.GESThread;
-import org.albacete.simd.utils.Problem;
-import org.albacete.simd.utils.Utils;
 import weka.classifiers.AbstractClassifier;
-import weka.classifiers.bayes.net.BIFReader;
 import weka.classifiers.evaluation.Evaluation;
 import weka.core.*;
 
@@ -59,7 +50,7 @@ public class ExperimentUtils {
     public static void saveExperiment(String path, String header, String data) {
         // Create the directory if it does not exist
         File directory = new File(path.substring(0, path.lastIndexOf("/")));
-        if (!directory.exists()){
+        if (!directory.exists()) {
             directory.mkdirs();
         }
 
@@ -77,7 +68,7 @@ public class ExperimentUtils {
     }
 
     public static String[] readParametersFromArgs(String[] args) {
-        int i=0;
+        int i = 0;
         for (String string : args) {
             System.out.println("arg[" + i + "]: " + string);
             i++;
@@ -95,11 +86,12 @@ public class ExperimentUtils {
                 br.readLine();
             line = br.readLine();
             parameters = line.split(" ");
+        } catch (Exception e) {
+            System.out.println(e);
         }
-        catch(Exception e){ System.out.println(e); }
 
         System.out.println("Number of hyperparams: " + parameters.length);
-        i=0;
+        i = 0;
         for (String string : parameters) {
             System.out.println("Param[" + i + "]: " + string);
             i++;
@@ -107,66 +99,10 @@ public class ExperimentUtils {
 
         return parameters;
     }
-    
-    public static double calculateBDeuGESThread(Data data, Dag dag) {
-        if ((data instanceof BN_DataSet dat)) {
-            Problem problem = dat.getProblem();
-            if (dat.getProblem() != null) {
-                return GESThread.scoreGraph(dag, problem);
-            } 
-        }
-        return -1;
-    }
-    
-    public static double calculateBDeu(Data data, Dag dag) {
-        if ((data instanceof BN_DataSet dat)) {
-            if (dat.getData() != null) {
-                BdeuScore bdeu = new BdeuScore(dat.getData());
-                Fges fges = new Fges(bdeu);
-                return fges.scoreDag(dag);
-            } 
-        }
-        return -1;
-    }
-    
-    public static int calculateSMHD(Data data, Dag dag) {
-        if ((data instanceof BN_DataSet dat)) {
-            if (dat.getOriginalBNPath() != null) {
-                try {
-                    BayesPm originalBN = readOriginalBayesianNetwork(dat.getOriginalBNPath());
-                    return Utils.SMHD(Utils.removeInconsistencies(originalBN.getDag()), dag);
-                } catch (Exception e) { e.printStackTrace(); }
-            }
-        }
-        return -1;
-    }
-
-    public static int calculateSHD(Data data, Dag dag) {
-        if ((data instanceof BN_DataSet dat)) {
-            if (dat.getOriginalBNPath() != null) {
-                try {
-                    BayesPm originalBN = readOriginalBayesianNetwork(dat.getOriginalBNPath());
-                    return Utils.SHD(Utils.removeInconsistencies(originalBN.getDag()), dag);
-                } catch (Exception e) { e.printStackTrace(); }
-            }
-        }
-        return -1;
-    }
-
-    public static int calculateFusSim(Data data, Dag dag) {
-        if ((data instanceof BN_DataSet dat)) {
-            if (dat.getOriginalBNPath() != null) {
-                try {
-                    BayesPm originalBN = readOriginalBayesianNetwork(dat.getOriginalBNPath());
-                    return Utils.fusionSimilarity(Utils.removeInconsistencies(originalBN.getDag()), dag);
-                } catch (Exception e) { e.printStackTrace(); }
-            }
-        }
-        return -1;
-    }
 
     /**
-     * Get the metrics of the model. The metrics are accuracy, precision, recall, F1-score, and prediction time.
+     * Get the metrics of the model. The metrics are accuracy, precision, recall,
+     * F1-score, and prediction time.
      *
      * @param instances The instances.
      * @return The metrics of the model in the form of a string.
@@ -184,8 +120,7 @@ public class ExperimentUtils {
 
         try {
             evaluation.evaluateModel(classifier, instances);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -219,14 +154,16 @@ public class ExperimentUtils {
     }
 
     /**
-     * Get the metrics of a ensemble model. The metrics are accuracy, precision, recall, F1-score, and prediction time.
+     * Get the metrics of a ensemble model. The metrics are accuracy, precision,
+     * recall, F1-score, and prediction time.
      *
-     * @param ensemble The ensemble of classifiers.
+     * @param ensemble           The ensemble of classifiers.
      * @param syntheticClassMaps The synthetic class maps.
-     * @param instances The instances.
+     * @param instances          The instances.
      * @return The metrics of the model in the form of a string.
      */
-    public static String getClassificationMetricsEnsemble(List<AbstractClassifier> ensemble, List<Map<String, Integer>> syntheticClassMaps, Instances instances) {
+    public static String getClassificationMetricsEnsemble(List<AbstractClassifier> ensemble,
+            List<Map<String, Integer>> syntheticClassMaps, Instances instances) {
         Evaluation evaluation;
         try {
             evaluation = new Evaluation(instances);
@@ -298,67 +235,17 @@ public class ExperimentUtils {
         double finalBrier = sumBrier / N;
 
         // Return matched format: Acc, Pr, Rc, F1, LogLoss, Brier, Time
-        return accuracy + "," + precision + "," + recall + "," + f1 + "," + finalLogLoss + "," + finalBrier + "," + time + ",";
-    }
-
-
-    /**
-     * Read the original Bayesian Network from the BIF file in the netPath.
-     * @return The original Bayesian Network.
-     * @throws Exception If the file is not found.
-     */
-    private static BayesPm readOriginalBayesianNetwork(String netPath) throws Exception {
-        final PrintStream err = new PrintStream(System.err);
-        System.setErr(new PrintStream(OutputStream.nullOutputStream()));
-
-        BIFReader bayesianReader = new BIFReader();
-        bayesianReader.processFile(netPath);
-
-        System.setErr(err);
-
-        // Transforming the BayesNet into a BayesPm
-        BayesPm bayesPm = Utils.transformBayesNetToBayesPm(bayesianReader);
-
-        //return new MlBayesIm(bayesPm);
-        return bayesPm;
-    }
-
-    public static Dag readDagFromMatrix(double[][] matrix, List<Node> nodes) {
-        Dag dag = new Dag(nodes);
-        for (int i = 0; i < matrix.length; i++) {
-            for (int j = 0; j < matrix[i].length; j++) {
-                if (matrix[i][j] > 0) {
-                    Edge edge = new Edge(nodes.get(i), nodes.get(j), Endpoint.TAIL, Endpoint.ARROW);
-                    dag.addEdge(edge);
-                }
-            }
-        }
-        return dag;
-    }
-
-    public static Graph readGraphFromMatrix(double[][] matrix, List<Node> nodes) {
-        Graph dag = new EdgeListGraph(nodes);
-        for (int i = 0; i < matrix.length; i++) {
-            for (int j = 0; j < matrix[i].length; j++) {
-                if (matrix[i][j] > 0) {
-                    if (matrix[j][i] > 0 && i < j) {
-                        Edge edge = new Edge(nodes.get(i), nodes.get(j), Endpoint.TAIL, Endpoint.TAIL);
-                        dag.addEdge(edge);
-                    } else {
-                        Edge edge = new Edge(nodes.get(i), nodes.get(j), Endpoint.TAIL, Endpoint.ARROW);
-                        dag.addEdge(edge);
-                    }
-                }
-            }
-        }
-        return dag;
+        return accuracy + "," + precision + "," + recall + "," + f1 + "," + finalLogLoss + "," + finalBrier + "," + time
+                + ",";
     }
 
     /**
-     * Computes the L1/L2 sensitivity K = (d - n) * C(d - 1, n) based on dataset and algorithm options.
+     * Computes the L1/L2 sensitivity K = (d - n) * C(d - 1, n) based on dataset and
+     * algorithm options.
      *
-     * @param data              the client data (must be Weka_Instances)
-     * @param algorithmOptions  the algorithm options containing the -S flag for structure
+     * @param data             the client data (must be Weka_Instances)
+     * @param algorithmOptions the algorithm options containing the -S flag for
+     *                         structure
      * @return the computed sensitivity value (number of affected cells)
      */
     public static int computeSensitivity(Data data, String[] algorithmOptions) {
@@ -381,8 +268,10 @@ public class ExperimentUtils {
     }
 
     public static int binomial(int n, int k) {
-        if (k < 0 || k > n) return 0;
-        if (k == 0 || k == n) return 1;
+        if (k < 0 || k > n)
+            return 0;
+        if (k == 0 || k == n)
+            return 1;
         int res = 1;
         for (int i = 1; i <= k; i++) {
             res = res * (n - (k - i)) / i;
@@ -390,7 +279,6 @@ public class ExperimentUtils {
         return res;
     }
 }
-
 
 class EnsembleClassifier extends AbstractClassifier {
 
@@ -423,7 +311,8 @@ class EnsembleClassifier extends AbstractClassifier {
             Instances syntheticHeader = new Instances(header, 0);
             syntheticHeader.setClassIndex(-1);
             syntheticHeader.deleteAttributeAt(header.classIndex());
-            syntheticHeader.insertAttributeAt(new Attribute("synthetic_class", synthValues), syntheticHeader.numAttributes());
+            syntheticHeader.insertAttributeAt(new Attribute("synthetic_class", synthValues),
+                    syntheticHeader.numAttributes());
             syntheticHeader.setClassIndex(syntheticHeader.numAttributes() - 1);
 
             Instance synthetic = new weka.core.DenseInstance(syntheticHeader.numAttributes());
@@ -431,7 +320,8 @@ class EnsembleClassifier extends AbstractClassifier {
 
             int aIdx = 0;
             for (int a = 0; a < instance.numAttributes(); a++) {
-                if (a == header.classIndex()) continue;
+                if (a == header.classIndex())
+                    continue;
                 synthetic.setValue(aIdx++, instance.value(a));
             }
 
@@ -467,4 +357,3 @@ class EnsembleClassifier extends AbstractClassifier {
         return yVotes;
     }
 }
-
