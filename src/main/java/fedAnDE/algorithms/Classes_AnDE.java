@@ -7,7 +7,7 @@ import weka.core.Instances;
 
 import java.util.*;
 
-import static fedAnDE.experiments.utils.Utils.generateCombinations;
+import static fedAnDE.utils.Utils.generateCombinations;
 
 /**
  * A local algorithm that extracts the synthetic class values
@@ -114,7 +114,8 @@ public class Classes_AnDE implements LocalAlgorithm {
             if (structure.startsWith("A") && structure.endsWith("DE")) {
                 return Integer.parseInt(structure.substring(1, structure.length() - 2));
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return 0;
     }
 
@@ -129,7 +130,8 @@ public class Classes_AnDE implements LocalAlgorithm {
         Map<String, Integer> classMap = new LinkedHashMap<>();
         for (int i = 0; i < data.numInstances(); i++) {
             StringBuilder sb = new StringBuilder();
-            for (int idx : indices) sb.append(data.instance(i).stringValue(idx)).append("|||");
+            for (int idx : indices)
+                sb.append(data.instance(i).stringValue(idx)).append("|||");
             sb.append(data.instance(i).stringValue(data.classIndex()));
             String key = sb.toString();
             classMap.putIfAbsent(key, classMap.size());

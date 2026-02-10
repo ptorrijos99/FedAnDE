@@ -39,24 +39,17 @@ import java.util.*;
  */
 import fedAnDE.algorithms.*;
 import fedAnDE.fusion.*;
-import fedAnDE.model.Classes;
-import fedAnDE.privacy.Gaussian_Noise;
-import fedAnDE.privacy.Laplace_Noise;
-import fedAnDE.privacy.NumericNoiseGenerator;
-import fedAnDE.privacy.ZCDP_Noise;
-import weka.core.Instances;
-import weka.core.Utils;
-
-/**
- * Local application imports.
- */
+import fedAnDE.model.*;
+import fedAnDE.privacy.*;
 import fedAnDE.core.Client;
 import fedAnDE.core.Server;
 import fedAnDE.convergence.Convergence;
 import fedAnDE.convergence.NoneConvergence;
 import fedAnDE.data.Data;
 import fedAnDE.data.Weka_Instances;
-import static fedAnDE.utils.ExperimentUtils.computeSensitivity;
+import fedAnDE.utils.ExperimentUtils;
+import weka.core.Instances;
+import weka.core.Utils;
 
 /**
  * A class representing an experiment with class-conditional Bayesian networks.
@@ -603,7 +596,7 @@ public class CCBNExperiment {
                 // Copy the dpOptions to avoid modifying the original array
                 dpOptions = Arrays.copyOf(dpOptions, dpOptions.length);
                 if (Utils.getFlag("AUTO", dpOptions)) {
-                    dp.setSensitivity(computeSensitivity(data, algorithmOptions));
+                    dp.setSensitivity(ExperimentUtils.computeSensitivity(data, algorithmOptions));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -51,8 +51,7 @@ import fedAnDE.data.Data;
 import fedAnDE.model.Model;
 import fedAnDE.model.WDPT;
 
-import static fedAnDE.experiments.utils.Utils.*;
-
+import static fedAnDE.utils.Utils.*;
 
 /**
  * A class representing a class-conditional Bayesian network algorithm.
@@ -102,8 +101,8 @@ public class WDPT_CCBN implements LocalAlgorithm {
     /**
      * Constructor.
      *
-     * @param options      The options to set the parameters of the algorithm.
-     * @param cutPoints    The cut points of the discretization filter.
+     * @param options   The options to set the parameters of the algorithm.
+     * @param cutPoints The cut points of the discretization filter.
      */
     public WDPT_CCBN(String[] options, double[][] cutPoints, List<Map<String, Integer>> globalClassMaps) {
         this.cutPoints = cutPoints;
@@ -118,7 +117,8 @@ public class WDPT_CCBN implements LocalAlgorithm {
             }
             // The internal wdBayes structure is always NB
             setInternalStructureToNB();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     /**
@@ -144,7 +144,7 @@ public class WDPT_CCBN implements LocalAlgorithm {
             int[] indices = combinations.get(i);
             Map<String, Integer> classMap = globalClassMaps.get(i);
             Instances modified = redefineClassAttribute(originalData, indices, classMap);
-            //Instances completed = ensureAllClassValuesPresent(modified, classMap);
+            // Instances completed = ensureAllClassValuesPresent(modified, classMap);
 
             // Build the classifier using the instances
             wdBayes algorithm = new wdBayes();
@@ -191,14 +191,15 @@ public class WDPT_CCBN implements LocalAlgorithm {
             syntheticClassMaps.add(classMap);
         }
 
-        return new WDPT(trees, classifiers, minimizers, combinations, syntheticClassMaps, functions, data.getNInstances());
+        return new WDPT(trees, classifiers, minimizers, combinations, syntheticClassMaps, functions,
+                data.getNInstances());
     }
 
     /**
      * Builds a local model using the provided data and existing local model.
      *
      * @param localModel The existing local model.
-     * @param data The data to build the model from.
+     * @param data       The data to build the model from.
      * @return The built local model.
      */
     public Model buildLocalModel(Model localModel, Data data) {
@@ -237,11 +238,12 @@ public class WDPT_CCBN implements LocalAlgorithm {
     }
 
     /**
-     * Refines the existing local model using the provided data. In this case, the model is not refined.
+     * Refines the existing local model using the provided data. In this case, the
+     * model is not refined.
      *
-     * @param oldModel The existing local model.
+     * @param oldModel   The existing local model.
      * @param localModel The current local model.
-     * @param data The data to refine the model with.
+     * @param data       The data to refine the model with.
      * @return The refined local model.
      */
     public Model refinateLocalModel(Model oldModel, Model localModel, Data data) {
@@ -277,8 +279,7 @@ public class WDPT_CCBN implements LocalAlgorithm {
         }
     }
 
-
-    /** 
+    /**
      * Retrieves the name of the algorithm.
      *
      * @return The name of the algorithm.
@@ -287,7 +288,7 @@ public class WDPT_CCBN implements LocalAlgorithm {
         return this.algorithmName;
     }
 
-    /** 
+    /**
      * Retrieves the name of the refinement.
      *
      * @return The name of the refinement.
