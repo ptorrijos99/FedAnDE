@@ -13,7 +13,7 @@ The framework supports federated training of **Generative**, **Discriminative**,
   - **Hybrid:** Combines local generative priors with global discriminative weights, providing privacy by design. Optionally, the counts can be also federated as in the generative mode.
 - **Differential Privacy:**
   - **Generative (`PT`):** Implements **formal $\varepsilon$-DP** by perturbing sufficient statistics (counts) with Laplace noise. The sensitivity is calibrated to the number of parameters.
-  - **Discriminative / Hybrid (`WDPT`):** Implements a **heuristic privacy mechanism** by injecting noise into the probability parameters. **Note:** This does not guarantee formal DP because the sensitivity is not strictly bounded for probabilities. Furthermore, applying the same $\varepsilon$ as in Generative mode can degrade model utility due to the scale mismatch (counts vs. probabilities).
+  - **Discriminative / Hybrid (`WDPT`):** Implements a **heuristic privacy mechanism** by injecting noise into the probability parameters. **Note:** This does not guarantee formal DP because the sensitivity is not strictly bounded for probabilities.
 
 
 ## Project Structure
