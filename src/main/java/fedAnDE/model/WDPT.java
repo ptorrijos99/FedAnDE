@@ -145,14 +145,6 @@ public class WDPT implements NumericDenoisableModel {
      * results are renormalized
      * and converted back to log-space when needed.
      * </p>
-     * <p>
-     * This method does not guarantee formal (ε, δ)-differential privacy,
-     * as the original counts are not accessible and the sensitivity of
-     * probabilities is not bounded.
-     * Instead, this noise injection serves as a heuristic privacy-preserving
-     * mechanism that introduces
-     * uncertainty and impairs exact model reconstruction.
-     * </p>
      *
      * @param noise the {@link NoiseGenerator} used to sample perturbation noise
      */
@@ -192,12 +184,6 @@ public class WDPT implements NumericDenoisableModel {
      * {@code xyCount[]}</li>
      * </ul>
      * This process is applied recursively to all children in the trie.
-     * </p>
-     * <p>
-     * Since noise is applied to normalized probabilities, the resulting privacy
-     * protection is heuristic and does not satisfy formal differential privacy
-     * without
-     * additional assumptions on sensitivity.
      * </p>
      *
      * @param node  the node whose conditional probabilities will be perturbed
